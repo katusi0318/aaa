@@ -2,282 +2,246 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>eFootball Online 2P</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>eFOOTBALL REAL TIME 3D 2P</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Three.js CDN for 3D Graphics -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- Google Fonts & Font Awesome Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Teko:wght@600;700&family=Noto+Sans+JP:wght@500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
   <style>
-    :root {
-      --bg-color: #0b0e14;
-      --card-bg: #161b22;
-      --primary-color: #00ffcc;
-      --accent-color: #ff0055;
-      --text-color: #ffffff;
-      --pitch-green: #1b4d2e;
-    }
-
-    * {
-      box-sizing: border-box;
-      user-select: none;
-    }
-
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: var(--bg-color);
-      color: var(--text-color);
-      margin: 0;
-      padding: 10px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      font-family: 'Noto Sans JP', sans-serif;
+      background: radial-gradient(circle at center, #0b0f19 0%, #030508 100%);
+      color: #ffffff;
+      overflow-x: hidden;
       touch-action: manipulation;
     }
 
-    h1 {
-      color: var(--primary-color);
-      margin: 5px 0;
-      font-size: 22px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
+    .font-teko {
+      font-family: 'Teko', sans-serif;
     }
 
-    .subtitle {
-      color: #8b949e;
-      font-size: 12px;
-      margin-bottom: 10px;
+    /* Glassmorphism Styling */
+    .glass-card {
+      background: rgba(18, 25, 41, 0.75);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(0, 242, 254, 0.2);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
     }
 
-    .card {
-      background-color: var(--card-bg);
-      border: 1px solid #30363d;
+    .glass-btn {
+      background: linear-gradient(135deg, rgba(0, 242, 254, 0.2), rgba(79, 172, 254, 0.3));
+      border: 1px solid rgba(0, 242, 254, 0.5);
+      transition: all 0.2s ease-in-out;
+    }
+    .glass-btn:active {
+      transform: scale(0.95);
+      background: rgba(0, 242, 254, 0.5);
+    }
+
+    /* Neon Glow Effects */
+    .neon-text-blue {
+      text-shadow: 0 0 10px rgba(0, 242, 254, 0.8), 0 0 20px rgba(0, 242, 254, 0.4);
+    }
+    .neon-text-pink {
+      text-shadow: 0 0 10px rgba(255, 0, 128, 0.8), 0 0 20px rgba(255, 0, 128, 0.4);
+    }
+
+    /* Custom D-Pad Touch Interface */
+    .dpad-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.2);
       border-radius: 12px;
-      padding: 12px;
-      width: 100%;
-      max-width: 520px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-      margin-bottom: 10px;
-      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 20px;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .dpad-btn:active, .dpad-btn.active {
+      background: rgba(0, 242, 254, 0.4);
+      border-color: #00f2fe;
     }
 
-    .pitch-container {
+    /* Canvas Viewport */
+    #canvas-container {
       position: relative;
       width: 100%;
-      margin: 0 auto;
+      height: 380px;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 2px solid rgba(0, 242, 254, 0.3);
+      box-shadow: 0 0 30px rgba(0, 242, 254, 0.15);
     }
 
-    canvas {
-      background-color: var(--pitch-green);
-      border: 3px solid #ffffff;
-      border-radius: 6px;
-      display: block;
-      width: 100%;
-      height: 300px;
-      touch-action: none;
-    }
-
-    .scoreboard {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: #0d1117;
-      border: 1px solid #30363d;
-      border-radius: 8px;
-      padding: 8px 15px;
-      margin-bottom: 10px;
-    }
-
-    .team-score {
-      font-size: 22px;
-      font-weight: bold;
-    }
-
-    .p1-color { color: var(--primary-color); }
-    .p2-color { color: var(--accent-color); }
-
-    .controls-panel {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 10px;
-      gap: 10px;
-    }
-
-    .dpad {
-      display: grid;
-      grid-template-columns: repeat(3, 42px);
-      grid-template-rows: repeat(3, 42px);
-      gap: 3px;
-    }
-
-    .dpad button {
-      background: #21262d;
-      border: 1px solid #30363d;
-      color: white;
-      border-radius: 6px;
-      font-size: 14px;
-      font-weight: bold;
-      padding: 0;
-      margin: 0;
-    }
-
-    .dpad button:active {
-      background: var(--primary-color);
-      color: black;
-    }
-
-    .action-btns {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      flex-grow: 1;
-    }
-
-    button.btn-action {
-      background: linear-gradient(45deg, var(--primary-color), #00a884);
-      color: #000;
-      border: none;
-      padding: 10px;
-      font-weight: bold;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 14px;
-    }
-
-    button.btn-action:active {
-      transform: scale(0.98);
-    }
-
-    button.btn-secondary {
-      background: #21262d;
-      color: #c9d1d9;
-      border: 1px solid #30363d;
-      padding: 8px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 12px;
-    }
-
-    button.btn-danger {
-      background: #da3633;
-      color: white;
-      border: none;
-      padding: 8px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 12px;
-    }
-
-    input[type="text"] {
-      width: 100%;
-      padding: 8px;
-      margin: 5px 0;
-      border-radius: 6px;
-      border: 1px solid #30363d;
-      background: #0d1117;
-      color: white;
-      text-align: center;
-    }
-
-    .room-box {
-      background: #0d1117;
-      padding: 10px;
-      border-radius: 8px;
-      margin-bottom: 10px;
-      border: 1px solid var(--primary-color);
-    }
-
-    ol {
-      padding-left: 20px;
-      text-align: left;
-      font-size: 13px;
-    }
-
-    li { margin-bottom: 4px; }
-
-    #status-msg {
-      font-size: 13px;
-      color: #ffcc00;
-      font-weight: bold;
-      margin-bottom: 5px;
+    /* Scoreboard Overlay */
+    .hud-overlay {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      width: 90%;
+      max-width: 420px;
     }
   </style>
 </head>
-<body>
+<body class="min-h-screen flex flex-col items-center justify-between p-2 sm:p-4">
 
-  <h1>eFOOTBALL ONLINE 2P</h1>
-  <div class="subtitle">1vs1 リアルタイム通信対戦サッカー</div>
+  <!-- Header Header Header -->
+  <header class="w-full max-w-2xl text-center my-2">
+    <h1 class="text-3xl sm:text-4xl font-extrabold tracking-wider font-teko uppercase text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-500 to-pink-500">
+      <i class="fa-solid font-bold fa-futbol mr-2 text-cyan-400"></i>eFOOTBALL REAL 3D ONLINE
+    </h1>
+    <p class="text-xs text-gray-400 tracking-wider">スタジアム体感型 1vs1 リアルタイム通信サッカーゲーム</p>
+  </header>
 
-  <div id="loading">通信中...</div>
-
-  <!-- 1. ログイン画面 -->
-  <div id="login-section" class="card" style="display: none;">
-    <h2>Googleログイン</h2>
-    <p style="font-size: 13px; color: #8b949e;">Googleアカウントでログインして友達と対戦を開始します。</p>
-    <button id="btn-login" class="btn-action">Googleでログイン</button>
+  <!-- Global Loading Indicator -->
+  <div id="loading" class="text-cyan-400 font-bold my-8 flex items-center space-x-2">
+    <i class="fa-solid fa-circle-notch fa-spin text-2xl"></i>
+    <span>スタジアム読み込み中...</span>
   </div>
 
-  <!-- 2. メインゲーム画面 -->
-  <div id="game-section" class="card" style="display: none;">
-    <div id="user-display" style="font-size: 13px; margin-bottom: 5px;"></div>
-
-    <!-- あい言葉対戦部屋設定 -->
-    <div class="room-box">
-      <label for="room-id-input" style="font-size: 12px; color: var(--primary-color);">🔑 あい言葉（ルームID）で友達とマッチング:</label>
-      <input type="text" id="room-id-input" value="1234" placeholder="例: 1234">
-      <button id="btn-join" class="btn-action">対戦部屋に入り試合開始</button>
+  <!-- 1. LOGIN SECTION -->
+  <div id="login-section" class="glass-card rounded-2xl p-6 w-full max-w-md text-center my-auto" style="display: none;">
+    <div class="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-tr from-cyan-500 to-pink-500 flex items-center justify-center shadow-lg shadow-cyan-500/30">
+      <i class="fa-solid fa-trophy text-3xl text-white"></i>
     </div>
+    <h2 class="text-xl font-bold mb-2">オンラインキックオフ</h2>
+    <p class="text-xs text-gray-400 mb-6 leading-relaxed">
+      Googleアカウントでサインインして、友達と同じあい言葉（ルーム名）でリアルタイムマッチに参戦しよう！
+    </p>
+    <button id="btn-login" class="w-full py-3.5 px-4 rounded-xl text-black font-bold bg-gradient-to-r from-cyan-400 to-blue-500 hover:opacity-90 shadow-lg shadow-cyan-500/30 flex items-center justify-center space-x-2 text-sm tracking-wider">
+      <i class="fa-brands fa-google text-lg"></i>
+      <span>Google アカウントでログイン</span>
+    </button>
+  </div>
 
-    <div id="status-msg">あい言葉を入力して「対戦部屋に入る」を押してください</div>
-
-    <!-- スコアボード -->
-    <div class="scoreboard">
-      <div>
-        <span id="p1-name" class="p1-color">P1 (HOME)</span>
-        <div id="p1-score" class="team-score p1-color">0</div>
+  <!-- 2. MAIN GAME SECTION -->
+  <div id="game-section" class="w-full max-w-2xl space-y-3" style="display: none;">
+    
+    <!-- User Info & Room Settings -->
+    <div class="glass-card p-3 sm:p-4 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div id="user-display" class="text-xs sm:text-sm text-gray-300 flex items-center space-x-2">
+        <i class="fa-solid fa-user-gear text-cyan-400"></i>
+        <span>読み込み中...</span>
       </div>
-      <div style="font-size: 14px; color: #8b949e;">VS</div>
-      <div>
-        <span id="p2-name" class="p2-color">P2 (AWAY)</span>
-        <div id="p2-score" class="team-score p2-color">0</div>
-      </div>
-    </div>
 
-    <!-- ピッチ（キャンバス） -->
-    <div class="pitch-container">
-      <canvas id="pitchCanvas" width="480" height="300"></canvas>
-    </div>
-
-    <!-- コントローラー -->
-    <div class="controls-panel">
-      <div class="dpad">
-        <div></div><button id="btn-up">▲</button><div></div>
-        <button id="btn-left">◀</button><div></div><button id="btn-right">▶</button>
-        <div></div><button id="btn-down">▼</button><div></div>
-      </div>
-      <div class="action-btns">
-        <button id="btn-kick" class="btn-action" style="background: linear-gradient(45deg, #ff0055, #ff5500); color: white;">⚡ シュート / パス</button>
-        <button id="btn-reset-ball" class="btn-secondary">⚽ ボールを中央に戻す</button>
+      <!-- Room Joining Controls -->
+      <div class="flex items-center space-x-2 w-full sm:w-auto">
+        <input type="text" id="room-id-input" value="1234" placeholder="あい言葉 (例: 1234)" 
+          class="bg-slate-900 border border-cyan-500/40 rounded-lg px-3 py-1.5 text-xs text-white text-center w-full sm:w-32 focus:outline-none focus:border-cyan-400">
+        <button id="btn-join" class="glass-btn px-4 py-1.5 rounded-lg text-xs font-bold text-cyan-300 whitespace-nowrap hover:bg-cyan-500/20">
+          <i class="fa-solid fa-right-to-bracket mr-1"></i>入室
+        </button>
       </div>
     </div>
 
-    <!-- プロフィール設定（加点要素） -->
-    <div style="margin-top: 15px; border-top: 1px solid #30363d; padding-top: 10px;">
-      <label style="font-size: 12px;">プレイヤー名変更 (編集機能):</label>
-      <input type="text" id="player-name-input" placeholder="イナズマFC">
-      <button id="btn-update-name" class="btn-secondary" style="width: 100%; margin-top: 4px;">名前を更新</button>
+    <!-- Match Status Banner -->
+    <div id="status-msg" class="text-center text-xs font-bold text-yellow-400 bg-black/40 py-1.5 px-3 rounded-lg border border-yellow-500/20 shadow-inner">
+      あい言葉を入力して「入室」を押してください
     </div>
 
-    <div style="margin-top: 10px; display: flex; gap: 5px;">
-      <button id="btn-reset-data" class="btn-danger" style="flex: 1;">データ削除 (初期化)</button>
-      <button id="btn-logout" class="btn-secondary" style="flex: 1;">ログアウト</button>
+    <!-- 3D VIEWPORT & HUD -->
+    <div id="canvas-container">
+      
+      <!-- Realistic HUD Scoreboard -->
+      <div class="hud-overlay glass-card rounded-xl p-2 px-4 flex justify-between items-center text-center">
+        <!-- P1 / HOME -->
+        <div class="flex items-center space-x-2">
+          <div class="w-3 h-3 rounded-full bg-cyan-400 shadow-md shadow-cyan-400"></div>
+          <div class="text-left">
+            <div id="p1-name" class="text-xs font-bold text-cyan-300 truncate max-w-[80px]">P1 (HOME)</div>
+            <div id="p1-score" class="font-teko text-2xl font-bold leading-none neon-text-blue">0</div>
+          </div>
+        </div>
+
+        <div class="font-teko text-xl font-bold text-gray-400 px-2">VS</div>
+
+        <!-- P2 / AWAY -->
+        <div class="flex items-center space-x-2">
+          <div class="text-right">
+            <div id="p2-name" class="text-xs font-bold text-pink-400 truncate max-w-[80px]">P2 (AWAY)</div>
+            <div id="p2-score" class="font-teko text-2xl font-bold leading-none neon-text-pink">0</div>
+          </div>
+          <div class="w-3 h-3 rounded-full bg-pink-500 shadow-md shadow-pink-500"></div>
+        </div>
+      </div>
+
+      <!-- Canvas Render Location -->
+      <div id="three-canvas" class="w-full h-full"></div>
+    </div>
+
+    <!-- CONTROLS & ACTION BUTTONS -->
+    <div class="grid grid-cols-12 gap-3 items-center glass-card p-3 rounded-2xl">
+      <!-- D-Pad Directional Keys -->
+      <div class="col-span-6 sm:col-span-5 grid grid-cols-3 gap-1.5 w-36 h-36 mx-auto sm:mx-0">
+        <div></div>
+        <div id="btn-up" class="dpad-btn"><i class="fa-solid fa-chevron-up"></i></div>
+        <div></div>
+        <div id="btn-left" class="dpad-btn"><i class="fa-solid fa-chevron-left"></i></div>
+        <div class="dpad-btn opacity-30"><i class="fa-solid fa-gamepad text-xs"></i></div>
+        <div id="btn-right" class="dpad-btn"><i class="fa-solid fa-chevron-right"></i></div>
+        <div></div>
+        <div id="btn-down" class="dpad-btn"><i class="fa-solid fa-chevron-down"></i></div>
+        <div></div>
+      </div>
+
+      <!-- Action & Skill Buttons -->
+      <div class="col-span-6 sm:col-span-7 flex flex-col justify-center space-y-2">
+        <button id="btn-kick" class="w-full py-3 rounded-xl font-bold text-white text-sm bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500 hover:opacity-90 shadow-lg shadow-pink-500/30 active:scale-95 transition-all">
+          <i class="fa-solid fa-bolt mr-1"></i> シュート / パス [SPACE]
+        </button>
+        <button id="btn-reset-ball" class="w-full py-2 rounded-xl text-xs font-medium bg-slate-800 border border-slate-700 text-gray-300 hover:bg-slate-700 active:scale-95 transition-all">
+          <i class="fa-solid fa-rotate-left mr-1"></i> ボールリセット
+        </button>
+      </div>
+    </div>
+
+    <!-- PLAYER PROFILE SETTINGS -->
+    <div class="glass-card p-3.5 rounded-xl space-y-2">
+      <div class="text-xs text-cyan-300 font-bold flex items-center space-x-1">
+        <i class="fa-solid fa-pen-to-square"></i>
+        <span>プレイヤーネーム編集 (クラウド同期)</span>
+      </div>
+      <div class="flex space-x-2">
+        <input type="text" id="player-name-input" placeholder="例: ストライカーFC" 
+          class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white flex-1 focus:outline-none focus:border-cyan-400">
+        <button id="btn-update-name" class="glass-btn px-4 py-1.5 rounded-lg text-xs text-cyan-300 font-bold">更新</button>
+      </div>
+    </div>
+
+    <!-- DATA MANAGEMENT & LOGOUT -->
+    <div class="flex space-x-2 pt-1">
+      <button id="btn-reset-data" class="flex-1 py-2 rounded-xl text-xs bg-red-950/60 border border-red-500/30 text-red-400 font-semibold hover:bg-red-900/50">
+        <i class="fa-solid fa-trash-can mr-1"></i> データ初期化
+      </button>
+      <button id="btn-logout" class="flex-1 py-2 rounded-xl text-xs bg-slate-800 border border-slate-700 text-gray-400 font-semibold hover:bg-slate-700">
+        <i class="fa-solid fa-right-from-bracket mr-1"></i> ログアウト
+      </button>
     </div>
   </div>
 
-  <!-- 3. オンラインランキング（加点要素） -->
-  <div id="ranking-section" class="card" style="display: none;">
-    <h3 style="font-size: 14px; margin: 0 0 8px 0; color: var(--primary-color);">🏆 オンライン通算勝利ランキング</h3>
-    <ol id="ranking-list"></ol>
+  <!-- 3. ONLINE RANKING LEADERBOARD -->
+  <div id="ranking-section" class="w-full max-w-2xl glass-card p-4 rounded-xl my-3" style="display: none;">
+    <h3 class="text-sm font-bold text-cyan-300 flex items-center space-x-2 mb-2">
+      <i class="fa-solid fa-ranking-star text-yellow-400 text-base"></i>
+      <span>通算勝利数 グローバルランキング</span>
+    </h3>
+    <ol id="ranking-list" class="space-y-1.5 text-xs text-gray-300"></ol>
   </div>
 
-  <!-- Firebase SDK (v10.8.0) -->
+  <!-- Footer Footer Footer -->
+  <footer class="text-center text-[10px] text-gray-500 py-2">
+    eFootball Online 3D Engine &bull; Powered by Three.js & Firebase
+  </footer>
+
+  <!-- FIREBASE SDKs (v10.8.0) -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { 
@@ -302,6 +266,7 @@
       onSnapshot 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
+    // Firebase Credentials
     const firebaseConfig = {
       apiKey: "AIzaSyCgDD5KHeP9F8KUKJNw2MoqbgqboMbnXgU",
       authDomain: "zisyu1.firebaseapp.com",
@@ -317,20 +282,24 @@
     const provider = new GoogleAuthProvider();
 
     let currentUser = null;
-    let playerData = { name: "イナズマFC", wins: 0 };
-
+    let playerData = { name: "ストライカーFC", wins: 0 };
     let myRole = null; // "p1" or "p2"
     let currentRoomId = null;
     let roomUnsubscribe = null;
 
+    // Game Physics & Coordinates State
+    const PITCH_WIDTH = 50;
+    const PITCH_HEIGHT = 30;
+
     const gameState = {
-      p1: { x: 80, y: 150 },
-      p2: { x: 400, y: 150 },
-      ball: { x: 240, y: 150 },
+      p1: { x: -18, z: 0 },
+      p2: { x: 18, z: 0 },
+      ball: { x: 0, y: 0.6, z: 0, vx: 0, vz: 0 },
       score1: 0,
       score2: 0
     };
 
+    // UI Elements
     const loadingEl = document.getElementById("loading");
     const loginSection = document.getElementById("login-section");
     const gameSection = document.getElementById("game-section");
@@ -345,9 +314,161 @@
     const nameInput = document.getElementById("player-name-input");
     const rankingList = document.getElementById("ranking-list");
 
-    const canvas = document.getElementById("pitchCanvas");
-    const ctx = canvas.getContext("2d");
+    // Web Audio Sound Synthesizer
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playKickSound() {
+      try {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(30, audioCtx.currentTime + 0.15);
+        gain.gain.setValueAtTime(0.8, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.15);
+      } catch(e){}
+    }
 
+    // Three.js 3D Engine Variables
+    let scene, camera, renderer;
+    let p1Mesh, p2Mesh, ballMesh;
+
+    function init3D() {
+      const container = document.getElementById('three-canvas');
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x060911);
+      scene.fog = new THREE.FogExp2(0x060911, 0.015);
+
+      camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+      camera.position.set(0, 32, 28);
+      camera.lookAt(0, 0, 2);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(width, height);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      container.appendChild(renderer.domElement);
+
+      // Lighting
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+      scene.add(ambientLight);
+
+      const stadiumLight1 = new THREE.SpotLight(0x00f2fe, 1.2);
+      stadiumLight1.position.set(-25, 30, -15);
+      stadiumLight1.castShadow = true;
+      scene.add(stadiumLight1);
+
+      const stadiumLight2 = new THREE.SpotLight(0xff0080, 1.2);
+      stadiumLight2.position.set(25, 30, 15);
+      stadiumLight2.castShadow = true;
+      scene.add(stadiumLight2);
+
+      // Soccer Field Grass
+      const pitchGeo = new THREE.PlaneGeometry(PITCH_WIDTH, PITCH_HEIGHT);
+      const pitchMat = new THREE.MeshStandardMaterial({ color: 0x184a28, roughness: 0.6 });
+      const pitch = new THREE.Mesh(pitchGeo, pitchMat);
+      pitch.rotation.x = -Math.PI / 2;
+      pitch.receiveShadow = true;
+      scene.add(pitch);
+
+      // Field Boundary Lines
+      const lineMat = new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 2 });
+      
+      // Center Line
+      const centerGeo = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(0, 0.02, -PITCH_HEIGHT / 2),
+        new THREE.Vector3(0, 0.02, PITCH_HEIGHT / 2)
+      ]);
+      scene.add(new THREE.Line(centerGeo, lineMat));
+
+      // Goals
+      createGoal(-PITCH_WIDTH / 2, 0x00f2fe);
+      createGoal(PITCH_WIDTH / 2, 0xff0080);
+
+      // P1 Player (Cyan Cylinder)
+      const playerGeo = new THREE.CylinderGeometry(0.9, 0.9, 1.8, 16);
+      const p1Mat = new THREE.MeshStandardMaterial({ color: 0x00f2fe, metalness: 0.3, roughness: 0.2 });
+      p1Mesh = new THREE.Mesh(playerGeo, p1Mat);
+      p1Mesh.position.y = 0.9;
+      p1Mesh.castShadow = true;
+      scene.add(p1Mesh);
+
+      // P2 Player (Pink Cylinder)
+      const p2Mat = new THREE.MeshStandardMaterial({ color: 0xff0080, metalness: 0.3, roughness: 0.2 });
+      p2Mesh = new THREE.Mesh(playerGeo, p2Mat);
+      p2Mesh.position.y = 0.9;
+      p2Mesh.castShadow = true;
+      scene.add(p2Mesh);
+
+      // Ball (Soccer Sphere)
+      const ballGeo = new THREE.SphereGeometry(0.6, 24, 24);
+      const ballMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
+      ballMesh = new THREE.Mesh(ballGeo, ballMat);
+      ballMesh.position.y = 0.6;
+      ballMesh.castShadow = true;
+      scene.add(ballMesh);
+
+      window.addEventListener('resize', onWindowResize);
+      animate3D();
+    }
+
+    function createGoal(xPos, colorHex) {
+      const goalGroup = new THREE.Group();
+      const mat = new THREE.MeshStandardMaterial({ color: colorHex, emissive: colorHex, emissiveIntensity: 0.3 });
+      
+      const postGeo = new THREE.CylinderGeometry(0.15, 0.15, 4);
+      const leftPost = new THREE.Mesh(postGeo, mat);
+      leftPost.position.set(xPos, 2, -4);
+      
+      const rightPost = new THREE.Mesh(postGeo, mat);
+      rightPost.position.set(xPos, 2, 4);
+
+      const crossGeo = new THREE.CylinderGeometry(0.15, 0.15, 8);
+      const crossbar = new THREE.Mesh(crossGeo, mat);
+      crossbar.rotation.x = Math.PI / 2;
+      crossbar.position.set(xPos, 4, 0);
+
+      goalGroup.add(leftPost, rightPost, crossbar);
+      scene.add(goalGroup);
+    }
+
+    function onWindowResize() {
+      const container = document.getElementById('three-canvas');
+      if (!container) return;
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    }
+
+    function animate3D() {
+      requestAnimationFrame(animate3D);
+
+      // Smooth Interpolation for Mesh Positions
+      p1Mesh.position.x += (gameState.p1.x - p1Mesh.position.x) * 0.3;
+      p1Mesh.position.z += (gameState.p1.z - p1Mesh.position.z) * 0.3;
+
+      p2Mesh.position.x += (gameState.p2.x - p2Mesh.position.x) * 0.3;
+      p2Mesh.position.z += (gameState.p2.z - p2Mesh.position.z) * 0.3;
+
+      ballMesh.position.x += (gameState.ball.x - ballMesh.position.x) * 0.3;
+      ballMesh.position.z += (gameState.ball.z - ballMesh.position.z) * 0.3;
+      ballMesh.position.y = gameState.ball.y;
+
+      // Ball Rotation Simulation
+      ballMesh.rotation.x += 0.05;
+      ballMesh.rotation.z += 0.05;
+
+      renderer.render(scene, camera);
+    }
+
+    // AUTHENTICATION MANAGEMENT
     getRedirectResult(auth).catch(err => console.error(err));
     document.getElementById("btn-login").addEventListener("click", () => signInWithRedirect(auth, provider));
     document.getElementById("btn-logout").addEventListener("click", () => signOut(auth));
@@ -362,7 +483,10 @@
 
         await loadPlayerData(user.uid, user.displayName);
         await loadRanking();
-        drawPitch();
+        
+        if (!renderer) {
+          setTimeout(init3D, 100);
+        }
       } else {
         currentUser = null;
         loginSection.style.display = "block";
@@ -379,12 +503,12 @@
         if (docSnap.exists()) {
           playerData = docSnap.data();
         } else {
-          playerData = { name: defaultName || "イナズマFC", wins: 0 };
+          playerData = { name: defaultName || "ストライカーFC", wins: 0 };
           await setDoc(docRef, playerData);
         }
-        userDisplay.innerHTML = `ログイン中: <strong>${playerData.name}</strong> (通算 ${playerData.wins || 0} 勝)`;
+        userDisplay.innerHTML = `<i class="fa-solid fa-circle-user text-cyan-400 text-base"></i><span><strong>${playerData.name}</strong> (${playerData.wins || 0} 勝)</span>`;
         nameInput.value = playerData.name;
-      } catch (e) { console.error("データ読み込みエラー:", e); }
+      } catch (e) { console.error("データ読込エラー:", e); }
     }
 
     async function savePlayerData() {
@@ -392,17 +516,18 @@
       try {
         const docRef = doc(db, "users", currentUser.uid);
         await setDoc(docRef, playerData);
-        userDisplay.innerHTML = `ログイン中: <strong>${playerData.name}</strong> (通算 ${playerData.wins || 0} 勝)`;
+        userDisplay.innerHTML = `<i class="fa-solid fa-circle-user text-cyan-400 text-base"></i><span><strong>${playerData.name}</strong> (${playerData.wins || 0} 勝)</span>`;
         await loadRanking();
       } catch (e) { console.error("データ保存エラー:", e); }
     }
 
+    // ROOM JOIN & REALTIME SYNC
     document.getElementById("btn-join").addEventListener("click", async () => {
       const roomId = roomIdInput.value.trim();
       if (!roomId) return alert("あい言葉を入力してください！");
 
       currentRoomId = roomId;
-      statusMsg.textContent = `部屋 [${roomId}] に接続中...`;
+      statusMsg.textContent = `部屋 [${roomId}] に通信接続中...`;
 
       const roomRef = doc(db, "rooms", `efootball_${roomId}`);
       const roomSnap = await getDoc(roomRef);
@@ -412,24 +537,24 @@
         await setDoc(roomRef, {
           p1: playerData.name,
           p2: null,
-          p1Pos: { x: 80, y: 150 },
-          p2Pos: { x: 400, y: 150 },
-          ball: { x: 240, y: 150 },
+          p1Pos: { x: -18, z: 0 },
+          p2Pos: { x: 18, z: 0 },
+          ball: { x: 0, y: 0.6, z: 0 },
           s1: 0, s2: 0
         });
         statusMsg.textContent = `部屋 [${roomId}] (P1: HOME) で待機中... 友達(P2)の参加を待っています`;
       } else if (!roomSnap.data().p2 && roomSnap.data().p1 !== playerData.name) {
         myRole = "p2";
         await setDoc(roomRef, { p2: playerData.name }, { merge: true });
-        statusMsg.textContent = `部屋 [${roomId}] (P2: AWAY) で参加！ キックオフ！`;
+        statusMsg.textContent = `部屋 [${roomId}] (P2: AWAY) に参戦！ キックオフ！`;
       } else {
         myRole = "p1";
         await setDoc(roomRef, {
           p1: playerData.name,
           p2: null,
-          p1Pos: { x: 80, y: 150 },
-          p2Pos: { x: 400, y: 150 },
-          ball: { x: 240, y: 150 },
+          p1Pos: { x: -18, z: 0 },
+          p2Pos: { x: 18, z: 0 },
+          ball: { x: 0, y: 0.6, z: 0 },
           s1: 0, s2: 0
         });
         statusMsg.textContent = `部屋 [${roomId}] を初期化しました。対戦相手を待ちます`;
@@ -445,11 +570,11 @@
         const data = snapshot.data();
         if (!data) return;
 
-        if (data.p1) p1NameEl.textContent = `P1: ${data.p1}`;
-        if (data.p2) p2NameEl.textContent = `P2: ${data.p2}`;
+        if (data.p1) p1NameEl.textContent = data.p1;
+        if (data.p2) p2NameEl.textContent = data.p2;
 
         if (data.p1 && data.p2) {
-          statusMsg.textContent = `⚽ 試合中！ [${data.p1}] vs [${data.p2}]`;
+          statusMsg.textContent = `⚡ MATCH: [${data.p1}] VS [${data.p2}]`;
         }
 
         if (data.p1Pos) gameState.p1 = data.p1Pos;
@@ -464,17 +589,16 @@
           gameState.score2 = data.s2;
           p2ScoreEl.textContent = data.s2;
         }
-
-        drawPitch();
       });
     }
 
-    async function movePlayer(dx, dy) {
+    // MOVEMENT & ACTIONS
+    async function movePlayer(dx, dz) {
       if (!myRole || !currentRoomId) return;
 
       const myPos = (myRole === "p1") ? gameState.p1 : gameState.p2;
-      myPos.x = Math.max(15, Math.min(canvas.width - 15, myPos.x + dx));
-      myPos.y = Math.max(15, Math.min(canvas.height - 15, myPos.y + dy));
+      myPos.x = Math.max(-PITCH_WIDTH / 2 + 1, Math.min(PITCH_WIDTH / 2 - 1, myPos.x + dx));
+      myPos.z = Math.max(-PITCH_HEIGHT / 2 + 1, Math.min(PITCH_HEIGHT / 2 - 1, myPos.z + dz));
 
       const roomRef = doc(db, "rooms", `efootball_${currentRoomId}`);
       const key = (myRole === "p1") ? "p1Pos" : "p2Pos";
@@ -485,32 +609,35 @@
     async function kickBall() {
       if (!myRole || !currentRoomId) return;
 
+      playKickSound();
       const myPos = (myRole === "p1") ? gameState.p1 : gameState.p2;
-      const dist = Math.hypot(gameState.ball.x - myPos.x, gameState.ball.y - myPos.y);
+      const dist = Math.hypot(gameState.ball.x - myPos.x, gameState.ball.z - myPos.z);
 
-      if (dist < 35) {
+      if (dist < 3.5) {
         const dir = (myRole === "p1") ? 1 : -1;
-        gameState.ball.x += dir * 40;
-        gameState.ball.y += (Math.random() - 0.5) * 20;
+        gameState.ball.x += dir * 6;
+        gameState.ball.z += (Math.random() - 0.5) * 3;
+        gameState.ball.y = 1.2;
 
-        if (gameState.ball.x > canvas.width - 20 && gameState.ball.y > 100 && gameState.ball.y < 200) {
+        // Goal Check
+        if (gameState.ball.x > PITCH_WIDTH / 2 - 1 && Math.abs(gameState.ball.z) < 4) {
           gameState.score1 += 1;
-          gameState.ball = { x: 240, y: 150 };
+          gameState.ball = { x: 0, y: 0.6, z: 0 };
           if (myRole === "p1") {
             playerData.wins = (playerData.wins || 0) + 1;
             await savePlayerData();
           }
-        } else if (gameState.ball.x < 20 && gameState.ball.y > 100 && gameState.ball.y < 200) {
+        } else if (gameState.ball.x < -PITCH_WIDTH / 2 + 1 && Math.abs(gameState.ball.z) < 4) {
           gameState.score2 += 1;
-          gameState.ball = { x: 240, y: 150 };
+          gameState.ball = { x: 0, y: 0.6, z: 0 };
           if (myRole === "p2") {
             playerData.wins = (playerData.wins || 0) + 1;
             await savePlayerData();
           }
         }
 
-        gameState.ball.x = Math.max(20, Math.min(canvas.width - 20, gameState.ball.x));
-        gameState.ball.y = Math.max(20, Math.min(canvas.height - 20, gameState.ball.y));
+        gameState.ball.x = Math.max(-PITCH_WIDTH / 2 + 1, Math.min(PITCH_WIDTH / 2 - 1, gameState.ball.x));
+        gameState.ball.z = Math.max(-PITCH_HEIGHT / 2 + 1, Math.min(PITCH_HEIGHT / 2 - 1, gameState.ball.z));
 
         const roomRef = doc(db, "rooms", `efootball_${currentRoomId}`);
         await setDoc(roomRef, {
@@ -521,53 +648,9 @@
       }
     }
 
-    function drawPitch() {
-      ctx.fillStyle = "#1b4d2e";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.6)";
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(canvas.width / 2, 0);
-      ctx.lineTo(canvas.width / 2, canvas.height);
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.arc(canvas.width / 2, canvas.height / 2, 40, 0, Math.PI * 2);
-      ctx.stroke();
-
-      ctx.strokeRect(0, 90, 40, 120);
-      ctx.strokeRect(canvas.width - 40, 90, 40, 120);
-
-      // P1
-      ctx.fillStyle = "#00ffcc";
-      ctx.beginPath();
-      ctx.arc(gameState.p1.x, gameState.p1.y, 14, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = "#000";
-      ctx.font = "bold 10px sans-serif";
-      ctx.fillText("P1", gameState.p1.x - 6, gameState.p1.y + 4);
-
-      // P2
-      ctx.fillStyle = "#ff0055";
-      ctx.beginPath();
-      ctx.arc(gameState.p2.x, gameState.p2.y, 14, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = "#fff";
-      ctx.fillText("P2", gameState.p2.x - 6, gameState.p2.y + 4);
-
-      // Ball
-      ctx.fillStyle = "#ffffff";
-      ctx.beginPath();
-      ctx.arc(gameState.ball.x, gameState.ball.y, 8, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = "#000";
-      ctx.lineWidth = 1;
-      ctx.stroke();
-    }
-
+    // Keyboard & D-Pad Bindings
     window.addEventListener("keydown", (e) => {
-      const step = 12;
+      const step = 1.2;
       if (e.key === "ArrowUp" || e.key === "w") movePlayer(0, -step);
       if (e.key === "ArrowDown" || e.key === "s") movePlayer(0, step);
       if (e.key === "ArrowLeft" || e.key === "a") movePlayer(-step, 0);
@@ -575,15 +658,15 @@
       if (e.key === " ") kickBall();
     });
 
-    document.getElementById("btn-up").addEventListener("click", () => movePlayer(0, -15));
-    document.getElementById("btn-down").addEventListener("click", () => movePlayer(0, 15));
-    document.getElementById("btn-left").addEventListener("click", () => movePlayer(-15, 0));
-    document.getElementById("btn-right").addEventListener("click", () => movePlayer(15, 0));
+    document.getElementById("btn-up").addEventListener("click", () => movePlayer(0, -1.5));
+    document.getElementById("btn-down").addEventListener("click", () => movePlayer(0, 1.5));
+    document.getElementById("btn-left").addEventListener("click", () => movePlayer(-1.5, 0));
+    document.getElementById("btn-right").addEventListener("click", () => movePlayer(1.5, 0));
     document.getElementById("btn-kick").addEventListener("click", kickBall);
 
     document.getElementById("btn-reset-ball").addEventListener("click", async () => {
       if (!currentRoomId) return;
-      gameState.ball = { x: 240, y: 150 };
+      gameState.ball = { x: 0, y: 0.6, z: 0 };
       const roomRef = doc(db, "rooms", `efootball_${currentRoomId}`);
       await setDoc(roomRef, { ball: gameState.ball }, { merge: true });
     });
@@ -593,31 +676,41 @@
       if (newName) {
         playerData.name = newName;
         await savePlayerData();
-        alert("名前を更新しました！");
+        alert("チームネームを更新しました！");
       }
     });
 
     document.getElementById("btn-reset-data").addEventListener("click", async () => {
-      if (confirm("本当にデータを初期化しますか？")) {
+      if (confirm("本当にプレイヤーデータを初期化しますか？")) {
         const docRef = doc(db, "users", currentUser.uid);
         await deleteDoc(docRef);
-        playerData = { name: currentUser.displayName || "イナズマ選手", wins: 0 };
+        playerData = { name: currentUser.displayName || "ストライカー選手", wins: 0 };
         await savePlayerData();
         alert("データを初期化しました。");
       }
     });
 
+    // LEADERBOARD RANKING
     async function loadRanking() {
       rankingList.innerHTML = "";
       try {
         const q = query(collection(db, "users"), orderBy("wins", "desc"), limit(5));
         const querySnapshot = await getDocs(q);
 
+        let rank = 1;
         querySnapshot.forEach((doc) => {
           const data = doc.data();
           const li = document.createElement("li");
-          li.textContent = `${data.name || "名無しの選手"}: ${data.wins || 0} 勝`;
+          li.className = "flex justify-between items-center bg-slate-900/80 p-2 rounded-lg border border-slate-800";
+          li.innerHTML = `
+            <span class="font-bold flex items-center space-x-2">
+              <span class="w-5 h-5 rounded-full ${rank === 1 ? 'bg-yellow-500 text-black' : 'bg-slate-800 text-gray-400'} flex items-center justify-center text-[10px]">${rank}</span>
+              <span>${data.name || "名無しの選手"}</span>
+            </span>
+            <span class="font-teko text-base font-bold text-cyan-400">${data.wins || 0} 勝</span>
+          `;
           rankingList.appendChild(li);
+          rank++;
         });
       } catch (e) { console.error("ランキング取得エラー:", e); }
     }
