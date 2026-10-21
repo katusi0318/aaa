@@ -125,12 +125,34 @@
   <!-- 2. MAIN GAME SECTION -->
   <div id="game-section" class="w-full max-w-2xl space-y-3" style="display: none;">
     
-    <!-- User Info & Room Settings -->
+    <!-- Game Mode Selection & User Info -->
     <div class="glass-card p-3 sm:p-4 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-3">
       <div id="user-display" class="text-xs sm:text-sm text-gray-300 flex items-center space-x-2">
         <i class="fa-solid fa-user-gear text-cyan-400"></i>
         <span>読み込み中...</span>
       </div>
+
+      <!-- Mode Selector & Controls -->
+      <div class="flex items-center space-x-2 w-full sm:w-auto">
+        <select id="game-mode-select" class="bg-slate-900 border border-cyan-500/40 rounded-lg px-2 py-1.5 text-xs text-cyan-300 focus:outline-none focus:border-cyan-400">
+          <option value="ai">🤖 AI (CPU) 対戦</option>
+          <option value="online">🌐 オンライン対戦 (2P)</option>
+        </select>
+
+        <div id="online-controls" class="flex items-center space-x-2" style="display: none;">
+          <input type="text" id="room-id-input" value="1234" placeholder="あい言葉" 
+            class="bg-slate-900 border border-cyan-500/40 rounded-lg px-3 py-1.5 text-xs text-white text-center w-24 focus:outline-none focus:border-cyan-400">
+          <button id="btn-join" class="glass-btn px-3 py-1.5 rounded-lg text-xs font-bold text-cyan-300 whitespace-nowrap hover:bg-cyan-500/20">
+            入室
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Match Status Banner -->
+    <div id="status-msg" class="text-center text-xs font-bold text-cyan-400 bg-black/40 py-1.5 px-3 rounded-lg border border-cyan-500/20 shadow-inner">
+      🤖 AI (CPU) 対戦モード：キックオフ！
+    </div>
 
       <!-- Room Joining Controls -->
       <div class="flex items-center space-x-2 w-full sm:w-auto">
@@ -283,9 +305,10 @@
 
     let currentUser = null;
     let playerData = { name: "ストライカーFC", wins: 0 };
-    let myRole = null; // "p1" or "p2"
+    let myRole = "p1"; // "p1" or "p2"
     let currentRoomId = null;
     let roomUnsubscribe = null;
+    let gameMode = "ai"; // "ai" or "online"
 
     // Game Physics & Coordinates State
     const PITCH_WIDTH = 50;
@@ -313,6 +336,85 @@
     const roomIdInput = document.getElementById("room-id-input");
     const nameInput = document.getElementById("player-name-input");
     const rankingList = document.getElementById("ranking-list");
+    const modeSelect = document.getElementById("game-mode-select");
+    const onlineControls = document.getElementById("online-controls");
+
+    // Mode Selector Handler
+    modeSelect.addEventListener("change", (e) => {
+      gameMode = e.target.value;
+      resetGame();
+
+      if (gameMode === "ai") {
+        onlineControls.style.display = "none";
+        p2NameEl.textContent = "CPU (AI)";
+        statusMsg.textContent = "🤖 AI (CPU) 対戦モード：キックオフ！";
+        myRole = "p1";
+        if (roomUnsubscribe) {
+          roomUnsubscribe();
+          roomUnsubscribe = null;
+        }
+      } else {
+        onlineControls.style.display = "flex";
+        p2NameEl.textContent = "P2 (AWAY)";
+        statusMsg.textContent = "あい言葉を入力して「入室」を押してください";
+      }
+    });
+
+    function resetGame() {
+      gameState.p1 = { x: -18, z: 0 };
+      gameState.p2 = { x: 18, z: 0 };
+      gameState.ball = { x: 0, y: 0.6, z: 0 };
+      gameState.score1 = 0;
+      gameState.score2 = 0;
+      p1ScoreEl.textContent = "0";
+      p2ScoreEl.textContent = "0";
+    }
+
+    // AI Logic Loop
+    function updateAI() {
+      if (gameMode !== "ai") return;
+
+      const ai = gameState.p2;
+      const ball = gameState.ball;
+      const speed = 0.45; // AIの移動速度
+
+      // ボールへの位置追従
+      const targetX = ball.x + 1.5; // ボールの少し右側（シュート位置）を目指す
+      const targetZ = ball.z;
+
+      const dx = targetX - ai.x;
+      const dz = targetZ - ai.z;
+      const dist = Math.hypot(dx, dz);
+
+      if (dist > 0.5) {
+        ai.x += (dx / dist) * speed;
+        ai.z += (dz / dist) * speed;
+      }
+
+      // ピッチの範囲内に制限
+      ai.x = Math.max(-PITCH_WIDTH / 2 + 1, Math.min(PITCH_WIDTH / 2 - 1, ai.x));
+      ai.z = Math.max(-PITCH_HEIGHT / 2 + 1, Math.min(PITCH_HEIGHT / 2 - 1, ai.z));
+
+      // AIのキック処理 (ボールと近距離の時)
+      const ballDist = Math.hypot(ball.x - ai.x, ball.z - ai.z);
+      if (ballDist < 2.8) {
+        playKickSound();
+        // HOMEゴール（左方向）へシュート
+        ball.x -= 7;
+        ball.z += (Math.random() - 0.5) * 4;
+        ball.y = 1.0;
+
+        // ゴール判定 (P2/AI 得点)
+        if (ball.x < -PITCH_WIDTH / 2 + 1 && Math.abs(ball.z) < 4) {
+          gameState.score2 += 1;
+          p2ScoreEl.textContent = gameState.score2;
+          gameState.ball = { x: 0, y: 0.6, z: 0 };
+        } else {
+          ball.x = Math.max(-PITCH_WIDTH / 2 + 1, Math.min(PITCH_WIDTH / 2 - 1, ball.x));
+          ball.z = Math.max(-PITCH_HEIGHT / 2 + 1, Math.min(PITCH_HEIGHT / 2 - 1, ball.z));
+        }
+      }
+    }
 
     // Web Audio Sound Synthesizer
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -495,6 +597,9 @@
     function animate3D() {
       requestAnimationFrame(animate3D);
 
+      // AI ロジックの定期実行
+      updateAI();
+
       // Smooth Interpolation for Mesh Positions
       p1Mesh.position.x += (gameState.p1.x - p1Mesh.position.x) * 0.3;
       p1Mesh.position.z += (gameState.p1.z - p1Mesh.position.z) * 0.3;
@@ -514,7 +619,6 @@
     }
 
     // AUTHENTICATION MANAGEMENT
-    // ポップアップと匿名ログイン対応を追加してログイン失敗を防ぐ
     import { signInWithPopup, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
     document.getElementById("btn-login").addEventListener("click", async () => {
@@ -582,8 +686,9 @@
       } catch (e) { console.error("データ保存エラー:", e); }
     }
 
-    // ROOM JOIN & REALTIME SYNC
+    // ROOM JOIN & REALTIME SYNC (オンラインモード用)
     document.getElementById("btn-join").addEventListener("click", async () => {
+      if (gameMode !== "online") return;
       const roomId = roomIdInput.value.trim();
       if (!roomId) return alert("あい言葉を入力してください！");
 
@@ -628,6 +733,7 @@
       if (roomUnsubscribe) roomUnsubscribe();
 
       roomUnsubscribe = onSnapshot(roomRef, (snapshot) => {
+        if (gameMode !== "online") return;
         const data = snapshot.data();
         if (!data) return;
 
@@ -655,21 +761,18 @@
 
     // MOVEMENT & ACTIONS
     async function movePlayer(dx, dz) {
-      if (!myRole || !currentRoomId) return;
-
       const myPos = (myRole === "p1") ? gameState.p1 : gameState.p2;
       myPos.x = Math.max(-PITCH_WIDTH / 2 + 1, Math.min(PITCH_WIDTH / 2 - 1, myPos.x + dx));
       myPos.z = Math.max(-PITCH_HEIGHT / 2 + 1, Math.min(PITCH_HEIGHT / 2 - 1, myPos.z + dz));
 
-      const roomRef = doc(db, "rooms", `efootball_${currentRoomId}`);
-      const key = (myRole === "p1") ? "p1Pos" : "p2Pos";
-
-      await setDoc(roomRef, { [key]: myPos }, { merge: true });
+      if (gameMode === "online" && currentRoomId) {
+        const roomRef = doc(db, "rooms", `efootball_${currentRoomId}`);
+        const key = (myRole === "p1") ? "p1Pos" : "p2Pos";
+        await setDoc(roomRef, { [key]: myPos }, { merge: true });
+      }
     }
 
     async function kickBall() {
-      if (!myRole || !currentRoomId) return;
-
       playKickSound();
       const myPos = (myRole === "p1") ? gameState.p1 : gameState.p2;
       const dist = Math.hypot(gameState.ball.x - myPos.x, gameState.ball.z - myPos.z);
@@ -683,6 +786,7 @@
         // Goal Check
         if (gameState.ball.x > PITCH_WIDTH / 2 - 1 && Math.abs(gameState.ball.z) < 4) {
           gameState.score1 += 1;
+          p1ScoreEl.textContent = gameState.score1;
           gameState.ball = { x: 0, y: 0.6, z: 0 };
           if (myRole === "p1") {
             playerData.wins = (playerData.wins || 0) + 1;
@@ -690,6 +794,7 @@
           }
         } else if (gameState.ball.x < -PITCH_WIDTH / 2 + 1 && Math.abs(gameState.ball.z) < 4) {
           gameState.score2 += 1;
+          p2ScoreEl.textContent = gameState.score2;
           gameState.ball = { x: 0, y: 0.6, z: 0 };
           if (myRole === "p2") {
             playerData.wins = (playerData.wins || 0) + 1;
@@ -700,12 +805,14 @@
         gameState.ball.x = Math.max(-PITCH_WIDTH / 2 + 1, Math.min(PITCH_WIDTH / 2 - 1, gameState.ball.x));
         gameState.ball.z = Math.max(-PITCH_HEIGHT / 2 + 1, Math.min(PITCH_HEIGHT / 2 - 1, gameState.ball.z));
 
-        const roomRef = doc(db, "rooms", `efootball_${currentRoomId}`);
-        await setDoc(roomRef, {
-          ball: gameState.ball,
-          s1: gameState.score1,
-          s2: gameState.score2
-        }, { merge: true });
+        if (gameMode === "online" && currentRoomId) {
+          const roomRef = doc(db, "rooms", `efootball_${currentRoomId}`);
+          await setDoc(roomRef, {
+            ball: gameState.ball,
+            s1: gameState.score1,
+            s2: gameState.score2
+          }, { merge: true });
+        }
       }
     }
 
@@ -726,10 +833,11 @@
     document.getElementById("btn-kick").addEventListener("click", kickBall);
 
     document.getElementById("btn-reset-ball").addEventListener("click", async () => {
-      if (!currentRoomId) return;
       gameState.ball = { x: 0, y: 0.6, z: 0 };
-      const roomRef = doc(db, "rooms", `efootball_${currentRoomId}`);
-      await setDoc(roomRef, { ball: gameState.ball }, { merge: true });
+      if (gameMode === "online" && currentRoomId) {
+        const roomRef = doc(db, "rooms", `efootball_${currentRoomId}`);
+        await setDoc(roomRef, { ball: gameState.ball }, { merge: true });
+      }
     });
 
     document.getElementById("btn-update-name").addEventListener("click", async () => {
