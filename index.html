@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Splatoon: Online Wide Battlefield</title>
+  <title>Splatoon: Friend Online Battle</title>
   <style>
     :root {
       --bg-color: #121212;
@@ -47,14 +47,13 @@
       border-radius: 12px;
       padding: 12px;
       width: 100%;
-      max-width: 600px; /* カード全幅を拡大 */
+      max-width: 600px;
       box-shadow: 0 0 15px rgba(0, 255, 102, 0.2);
       margin-bottom: 15px;
       box-sizing: border-box;
       text-align: center;
     }
 
-    /* キャンバスをカード幅いっぱいに拡大レスポンシブ化 */
     .canvas-container {
       width: 100%;
       margin: 0 auto;
@@ -67,8 +66,8 @@
       cursor: crosshair;
       touch-action: none;
       display: block;
-      width: 100%; /* 横幅自動フィット */
-      height: 320px; /* 高さも拡張 */
+      width: 100%;
+      height: 320px;
     }
 
     button {
@@ -105,7 +104,6 @@
     .p1-text { color: var(--p1-color); }
     .p2-text { color: var(--p2-color); }
 
-    /* インクゲージ */
     .tank-bar-container {
       width: 100%;
       background: #333;
@@ -137,6 +135,14 @@
       text-align: center;
     }
 
+    .friend-box {
+      background: #111;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      border: 1px dashed var(--p1-color);
+    }
+
     ol { padding-left: 20px; text-align: left; }
     li { margin-bottom: 6px; color: #ddd; }
     #loading { color: var(--p1-color); font-size: 16px; margin-bottom: 15px; }
@@ -144,22 +150,30 @@
 </head>
 <body>
 
-  <h1>SPLAT-TURF: WIDE BATTLE</h1>
-  <div class="subtitle">〜 ワイドステージ＆リアルタイム対戦 〜</div>
+  <h1>SPLAT-TURF: FRIEND MATCH</h1>
+  <div class="subtitle">〜 友達と合言葉でリアルタイム対戦 〜</div>
 
   <div id="loading">通信中...</div>
 
   <!-- ログイン画面 -->
   <div id="login-section" class="card" style="display: none;">
     <h2>Googleログイン</h2>
-    <p>広くなったステージでオンライン対戦を開始しよう！</p>
+    <p>Googleアカウントでログインして友達と対戦しよう！</p>
     <button id="btn-login">Googleでログインしてプレイ</button>
   </div>
 
   <!-- メインゲーム画面 -->
   <div id="game-section" class="card" style="display: none;">
     <div id="user-display"></div>
-    <div id="room-status">対戦ルームに参加してください</div>
+
+    <!-- 友達対戦用 あい言葉入力 -->
+    <div class="friend-box">
+      <label for="room-id-input" style="font-size: 13px; color: #ffcc00;">🔑 友達と同じ「あい言葉」を入力:</label>
+      <input type="text" id="room-id-input" placeholder="例: 1234" value="1234">
+      <button id="btn-join">この「あい言葉」で部屋に入る</button>
+    </div>
+
+    <div id="room-status">「あい言葉」を入力して部屋に入ってください</div>
 
     <div class="status-box">
       <div class="status-item">
@@ -176,18 +190,14 @@
       </div>
     </div>
 
-    <!-- インク残量バー -->
     <div style="font-size: 12px; text-align: left; margin-bottom: 2px;">INK TANK</div>
     <div class="tank-bar-container">
       <div id="tank-bar" class="tank-bar"></div>
     </div>
 
     <div class="canvas-container">
-      <!-- キャンバス解像度を 500x320 に拡大 -->
       <canvas id="paintCanvas" width="500" height="320"></canvas>
     </div>
-
-    <button id="btn-join">対戦ルームに入る（自動マッチング）</button>
 
     <h3>📝 プレイヤー名設定（加点要素）</h3>
     <input type="text" id="player-name-input" placeholder="イカのなまえ">
@@ -247,16 +257,16 @@
     let playerData = { name: "", wins: 0 };
 
     let myRole = null; 
+    let currentRoomId = null;
     let roomUnsubscribe = null;
     let isDrawing = false;
     let p1Score = 0;
     let p2Score = 0;
 
-    // インクタンクシステム
     let inkAmount = 100;
     const tankBar = document.getElementById("tank-bar");
 
-    // インク自動回復（毎秒）
+    // インク自動回復
     setInterval(() => {
       if (inkAmount < 100) {
         inkAmount = Math.min(100, inkAmount + 5);
@@ -274,6 +284,7 @@
     const p2ScoreEl = document.getElementById("p2-score");
     const winsValEl = document.getElementById("wins-val");
     const btnJoin = document.getElementById("btn-join");
+    const roomIdInput = document.getElementById("room-id-input");
     const nameInput = document.getElementById("player-name-input");
     const rankingList = document.getElementById("ranking-list");
 
@@ -297,63 +308,4 @@
         resetCanvas();
       } else {
         currentUser = null;
-        loginSection.style.display = "block";
-        gameSection.style.display = "none";
-        rankingSection.style.display = "none";
-      }
-    });
-
-    async function loadPlayerData(uid, defaultName) {
-      try {
-        const docRef = doc(db, "users", uid);
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists()) {
-          playerData = docSnap.data();
-        } else {
-          playerData = { name: defaultName || "イカ選手", wins: 0 };
-          await setDoc(docRef, playerData);
-        }
-        updateUI();
-      } catch (e) { console.error(e); }
-    }
-
-    async function savePlayerData() {
-      if (!currentUser) return;
-      try {
-        const docRef = doc(db, "users", currentUser.uid);
-        await setDoc(docRef, playerData);
-        await loadRanking();
-      } catch (e) { console.error(e); }
-    }
-
-    function updateUI() {
-      userDisplay.innerHTML = `<p>プレイヤー: <strong>${playerData.name}</strong></p>`;
-      winsValEl.textContent = `${playerData.wins || 0} 勝利`;
-      nameInput.value = playerData.name;
-    }
-
-    function resetCanvas() {
-      ctx.fillStyle = "#222222";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      p1Score = 0;
-      p2Score = 0;
-      p1ScoreEl.textContent = "0 pt";
-      p2ScoreEl.textContent = "0 pt";
-    }
-
-    btnJoin.addEventListener("click", async () => {
-      btnJoin.disabled = true;
-      roomStatus.textContent = "対戦相手を検索中...";
-
-      const roomRef = doc(db, "rooms", "main_room");
-      const roomSnap = await getDoc(roomRef);
-
-      if (!roomSnap.exists() || !roomSnap.data().p1) {
-        myRole = "p1";
-        await setDoc(roomRef, { p1: playerData.name, p2: null, p1Score: 0, p2Score: 0, lastPaint: null });
-        roomStatus.textContent = "P1で参加中... 対戦相手(P2)を待っています";
-      } else if (!roomSnap.data().p2) {
-        myRole = "p2";
-        await setDoc(roomRef, { p2: playerData.name }, { merge: true });
-        roomStatus.textContent
+        login
