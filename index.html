@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Splatoon: Turf War AI Battle</title>
+  <style>
+    :root {
+      --bg-color: #121212;
+      --card-bg: #1e1e1e;
+      --player-color: #00ff66;
+      --ai-color: #ff0055;
+      --text-color: #ffffff;
+    }
+
+    body {
+      font-family: 'Segoe UI', Roboto, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      margin: 0;
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      touch-action: manipulation;
+    }
+
+    h1 {
+      color: var(--player-color);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      text-shadow: 0 0 10px var(--player-color);
+      margin-bottom: 5px;
+      font-size: 26px;
+    }
+
+    .subtitle {
+      color: var(--ai-color);
+      font-size: 14px;
+      margin-bottom: 15px;
+      font-weight: bold;
+    }
+
+    .card {
+      background-color: var(--card-bg);
+      border: 2px solid var(--player-color);
+      border-radius: 12px;
+      padding: 15px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 0 15px rgba(0, 255, 102, 0.2);
+      margin-bottom: 15px;
+      box-sizing: border-box;
+      text-align: center;
+    }
+
+    canvas {
+      background-color: #222;
+      border: 3px solid #444;
+      border-radius: 8px;
+      cursor: crosshair;
+      touch-action: none;
+      display: block;
+      margin: 0 auto;
+    }
+
+    button {
+      width: 100%;
+      background: linear-gradient(45deg, var(--player-color), #00b349);
+      border: none;
+      color: #000;
+      padding: 12px;
+      font-size: 16px;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: 0.2s;
+    }
+
+    button:hover {
+      opacity: 0.9;
+      transform: scale(1.02);
+    }
+
+    .btn-secondary {
+      background: #333;
+      color: #fff;
+      border: 1px solid var(--player-color);
+    }
+
+    .btn-danger {
+      background: #ff4444;
+      color: #fff;
+    }
+
+    .status-box {
+      display: flex;
+      justify-content: space-around;
+      background: #111;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+
+    .status-item {
+      text-align: center;
+    }
+
+    .status-value {
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .player-text { color: var(--player-color); }
+    .ai-text { color: var(--ai-color); }
+
+    #timer-val {
+      font-size: 24px;
+      color: #ffcc00;
+      font-weight: bold;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      margin-top: 8px;
+      border-radius: 6px;
+      border: 1px solid var(--player-color);
+      background: #111;
+      color: white;
+      box-sizing: border-box;
+      text-align: center;
+    }
+
+    ol {
+      padding-left: 20px;
+      text-align: left;
+    }
+
+    li {
+      margin-bottom: 6px;
+      color: #ddd;
+    }
+
+    #loading {
+      color: var(--player-color);
+      font-size: 16px;
+      margin-bottom: 15px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>SPLAT-TURF: AI BATTLE</h1>
+  <div class="subtitle">〜 VS ライバルAI 塗り返しバトル！ 〜</div>
+
+  <div id="loading">通信中...</div>
+
+  <!-- ログイン画面 -->
+  <div id="login-section" class="card" style="display: none;">
+    <h2>Googleログイン</h2>
+    <p>AI対戦で勝利を重ねてクラウドのランキングに名を刻め！</p>
+    <button id="btn-login">Googleでログインして対戦</button>
+  </div>
+
+  <!-- メインゲーム画面 -->
+  <div id="game-section" class="card" style="display: none;">
+    <div id="user-display"></div>
+
+    <div id="timer-box" style="margin-bottom: 10px;">
+      残り時間: <span id="timer-val">30</span>秒
+    </div>
+
+    <div class="status-box">
+      <div class="status-item">
+        <div class="player-text">YOU (緑)</div>
+        <div id="player-score" class="status-value player-text">0 pt</div>
+      </div>
+      <div class="status-item">
+        <div class="ai-text">AI (赤)</div>
+        <div id="ai-score" class="status-value ai-text">0 pt</div>
+      </div>
+      <div class="status-item">
+        <div>勝利数</div>
+        <div id="wins-val" class="status-value" style="color: #00ffcc;">0 勝利</div>
+      </div>
+    </div>
+
+    <canvas id="paintCanvas" width="350" height="280"></canvas>
+
+    <button id="btn-start">バトルスタート！</button>
+
+    <h3>📝 プレイヤー名設定（加点要素）</h3>
+    <input type="text" id="player-name-input" placeholder="イカのなまえ">
+    <button id="btn-update-name" class="btn-secondary">名前を変更する</button>
+
+    <br><br>
+    <button id="btn-reset" class="btn-danger">全データを初期化</button>
+    <button id="btn-logout" class="btn-secondary">ログアウト</button>
+  </div>
+
+  <!-- ランキング画面 -->
+  <div id="ranking-section" class="card" style="display: none;">
+    <h3>🏆 全国対AI勝利数ランキング</h3>
+    <ol id="ranking-list"></ol>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { 
+      getAuth, 
+      signInWithRedirect, 
+      getRedirectResult, 
+      signOut, 
+      onAuthStateChanged,
+      GoogleAuthProvider 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { 
+      getFirestore, 
+      doc, 
+      setDoc, 
+      getDoc, 
+      deleteDoc, 
+      collection, 
+      getDocs, 
+      query, 
+      orderBy, 
+      limit 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    // Firebase設定
+    const firebaseConfig = {
+      apiKey: "AIzaSyCgDD5KHeP9F8KUKJNw2MoqbgqboMbnXgU",
+      authDomain: "zisyu1.firebaseapp.com",
+      projectId: "zisyu1",
+      storageBucket: "zisyu1.firebasestorage.app",
+      messagingSenderId: "977101155156",
+      appId: "1:977101155156:web:edb2283bb33055090e76c1"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const provider = new GoogleAuthProvider();
+
+    let currentUser = null;
+    let playerData = { name: "", wins: 0 };
+
+    // ゲーム状態
+    let isPlaying = false;
+    let timeLeft = 30;
+    let timerInterval = null;
+    let aiInterval = null;
+    let playerScore = 0;
+    let aiScore = 0;
+
+    // AIの座標
+    let aiX = 300;
+    let aiY = 230;
+    let aiAngle = Math.PI;
+
+    // DOM要素
+    const loadingEl = document.getElementById("loading");
+    const loginSection = document.getElementById("login-section");
+    const gameSection = document.getElementById("game-section");
+    const rankingSection = document.getElementById("ranking-section");
+    const userDisplay = document.getElementById("user-display");
+    const playerScoreEl = document.getElementById("player-score");
+    const aiScoreEl = document.getElementById("ai-score");
+    const winsValEl = document.getElementById("wins-val");
+    const timerValEl = document.getElementById("timer-val");
+    const btnStart = document.getElementById("btn-start");
+    const nameInput = document.getElementById("player-name-input");
+    const rankingList = document.getElementById("ranking-list");
+
+    // キャンバス
+    const canvas = document.getElementById("paintCanvas");
+    const ctx = canvas.getContext("2d");
+    let isDrawing = false;
+
+    // 認証
+    getRedirectResult(auth).catch(err => console.error(err));
+    document.getElementById("btn-login").addEventListener("click", () => signInWithRedirect(auth, provider));
+    document.getElementById("btn-logout").addEventListener("click", () => signOut(auth));
+
+    onAuthStateChanged(auth, async (user) => {
+      loadingEl.style.display = "none";
+      if (user) {
+        currentUser = user;
+        loginSection.style.display = "none";
+        gameSection.style.display = "block";
+        rankingSection.style.display = "block";
+
+        await loadPlayerData(user.uid, user.displayName);
+        await loadRanking();
+        resetCanvas();
+      } else {
+        currentUser = null;
+        loginSection.style.display = "block";
+        gameSection.style.display = "none";
+        rankingSection.style.display = "none";
+      }
+    });
+
+    // データ読み込み
+    async function loadPlayerData(uid, defaultName) {
+      try {
+        const docRef = doc(db, "users", uid);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+          playerData = docSnap.data();
+        } else {
+          playerData = { name: defaultName || "イカ選手", wins: 0 };
+          await setDoc(docRef, playerData);
+        }
+        updateUI();
+      } catch (e) {
+        console.error("Load Error:", e);
+      }
+    }
+
+    // データ保存
+    async function savePlayerData() {
+      if (!currentUser) return;
+      try {
+        const docRef = doc(db, "users", currentUser.uid);
+        await setDoc(docRef, playerData);
+        await loadRanking();
+      } catch (e) {
+        console.error("Save Error:", e);
+      }
+    }
+
+    function updateUI() {
+      userDisplay.innerHTML = `<p>プレイヤー: <strong>${playerData.name}</strong></p>`;
+      winsValEl.textContent = `${playerData.wins || 0} 勝利`;
+      nameInput.value = playerData.name;
+    }
+
+    // キャンバスのリセット
+    function resetCanvas() {
+      ctx.fillStyle = "#222222";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      playerScore = 0;
+      aiScore = 0;
+      playerScoreEl.textContent = "0 pt";
+      aiScoreEl.textContent = "0 pt";
+    }
+
+    // プレイヤーのインク塗り
+    function paintPlayer(e) {
+      if (!isPlaying || !isDrawing) return;
+      e.preventDefault();
+
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.clientX || (e.touches && e.touches[0].clientX)) - rect.left;
+      const y = (e.clientY || (e.touches && e.touches[0].clientY)) - rect.top;
+
+      drawSplatter(x, y, "#00ff66");
+      playerScore += 12;
+      playerScoreEl.textContent = `${playerScore} pt`;
+    }
+
+    // AI（相手CPU）のアルゴリズム
+    function moveAndPaintAI() {
+      if (!isPlaying) return;
+
+      // ランダムに方向を変えつつ移動
+      aiAngle += (Math.random() - 0.5) * 0.8;
+      const speed = 7;
+      aiX += Math.cos(aiAngle) * speed;
+      aiY += Math.sin(aiAngle) * speed;
+
+      // 壁にあたったら跳ね返る
+      if (aiX < 20 || aiX > canvas.width - 20) aiAngle = Math.PI - aiAngle;
+      if (aiY < 20 || aiY > canvas.height - 20) aiAngle = -aiAngle;
+
+      // AIインク（赤）を塗る
+      drawSplatter(aiX, aiY, "#ff0055");
+      aiScore += 10;
+      aiScoreEl.textContent = `${aiScore} pt`;
+    }
+
+    // インク飛沫の描画
+    function drawSplatter(x, y, color) {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(x, y, 14, 0, Math.PI * 2);
+      ctx.fill();
+
+      for (let i = 0; i < 3; i++) {
+        const dropX = x + (Math.random() - 0.5) * 30;
+        const dropY = y + (Math.random() - 0.5) * 30;
+        ctx.beginPath();
+        ctx.arc(dropX, dropY, Math.random() * 5 + 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // ゲーム開始
+    btnStart.addEventListener("click", () => {
+      if (isPlaying) return;
+
+      resetCanvas();
+      isPlaying = true;
+      timeLeft = 30;
+      timerValEl.textContent = timeLeft;
+      btnStart.disabled = true;
+      btnStart.textContent = "対戦中...";
+
+      // AI初期位置設定
+      aiX = Math.random() * (canvas.width - 100) + 50;
+      aiY = Math.random() * (canvas.height - 100) + 50;
+
+      // タイマー（カウントダウン）
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        timerValEl.textContent = timeLeft;
+        if (timeLeft <= 0) endGame();
+      }, 1000);
+
+      // AI移動ループ（毎秒更新）
+      aiInterval = setInterval(moveAndPaintAI, 100);
+    });
+
+    // ゲーム終了判定
+    async function endGame() {
+      isPlaying = false;
+      clearInterval(timerInterval);
+      clearInterval(aiInterval);
+      btnStart.disabled = false;
+      btnStart.textContent = "もう一度対戦する！";
+
+      if (playerScore > aiScore) {
+        playerData.wins = (playerData.wins || 0) + 1;
+        updateUI();
+        await savePlayerData();
+        alert(`🎉 勝利！\nYOU: ${playerScore}pt vs AI: ${aiScore}pt\n勝利数が保存されました！`);
+      } else if (playerScore < aiScore) {
+        alert(`😭 敗北...\nYOU: ${playerScore}pt vs AI: ${aiScore}pt\n次回頑張りましょう！`);
+      } else {
+        alert(`🤝 引き分け！\n両者 ${playerScore}pt`);
+      }
+    }
+
+    // マウス・タッチイベント
+    canvas.addEventListener("mousedown", (e) => { isDrawing = true; paintPlayer(e); });
+    canvas.addEventListener("mouseup", () => { isDrawing = false; });
+    canvas.addEventListener("mousemove", paintPlayer);
+    canvas.addEventListener("mouseleave", () => { isDrawing = false; });
+
+    canvas.addEventListener("touchstart", (e) => { isDrawing = true; paintPlayer(e); }, { passive: false });
+    canvas.addEventListener("touchend", () => { isDrawing = false; });
+    canvas.addEventListener("touchmove", paintPlayer, { passive: false });
+
+    // 名前変更
+    document.getElementById("btn-update-name").addEventListener("click", async () => {
+      const newName = nameInput.value.trim();
+      if (newName) {
+        playerData.name = newName;
+        updateUI();
+        await savePlayerData();
+        alert("名前を変更しました！");
+      }
+    });
+
+    // リセット
+    document.getElementById("btn-reset").addEventListener("click", async () => {
+      if (confirm("データを初期化しますか？")) {
+        const docRef = doc(db, "users", currentUser.uid);
+        await deleteDoc(docRef);
+        playerData = { name: currentUser.displayName || "イカ選手", wins: 0 };
+        resetCanvas();
+        await savePlayerData();
+        alert("データを初期化しました。");
+      }
+    });
+
+    // ランキング取得
+    async function loadRanking() {
+      rankingList.innerHTML = "";
+      try {
+        const q = query(collection(db, "users"), orderBy("wins", "desc"), limit(5));
+        const querySnapshot = await getDocs(q);
+
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          const li = document.createElement("li");
+          li.textContent = `${data.name || "名無しのイカ"}: ${data.wins || 0} 勝利`;
+          rankingList.appendChild(li);
+        });
+      } catch (e) {
+        console.error("Ranking Error:", e);
+      }
+    }
+  </script>
+</body>
+</html>
