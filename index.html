@@ -3,18 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Splatoon: Battle Royale</title>
+  <title>eFootball Online 2P</title>
   <style>
     :root {
-      --bg-color: #0d0d11;
-      --card-bg: #1a1a24;
-      --accent-color: #00ffcc;
-      --neon-pink: #ff007f;
+      --bg-color: #0b0e14;
+      --card-bg: #161b22;
+      --primary-color: #00ffcc;
+      --accent-color: #ff0055;
       --text-color: #ffffff;
+      --pitch-green: #1b4d2e;
+    }
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
     }
 
     body {
-      font-family: 'Segoe UI', Roboto, sans-serif;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background-color: var(--bg-color);
       color: var(--text-color);
       margin: 0;
@@ -26,188 +32,252 @@
     }
 
     h1 {
-      color: var(--accent-color);
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      text-shadow: 0 0 12px var(--accent-color);
+      color: var(--primary-color);
       margin: 5px 0;
-      font-size: 24px;
+      font-size: 22px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
     }
 
     .subtitle {
-      color: var(--neon-pink);
-      font-size: 13px;
+      color: #8b949e;
+      font-size: 12px;
       margin-bottom: 10px;
-      font-weight: bold;
     }
 
     .card {
       background-color: var(--card-bg);
-      border: 2px solid var(--accent-color);
+      border: 1px solid #30363d;
       border-radius: 12px;
       padding: 12px;
       width: 100%;
-      max-width: 600px;
-      box-shadow: 0 0 15px rgba(0, 255, 204, 0.2);
-      margin-bottom: 15px;
-      box-sizing: border-box;
+      max-width: 520px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+      margin-bottom: 10px;
       text-align: center;
     }
 
-    .canvas-container {
+    .pitch-container {
+      position: relative;
       width: 100%;
       margin: 0 auto;
     }
 
     canvas {
-      background-color: #222;
-      border: 3px solid #444;
-      border-radius: 8px;
-      cursor: crosshair;
-      touch-action: none;
+      background-color: var(--pitch-green);
+      border: 3px solid #ffffff;
+      border-radius: 6px;
       display: block;
       width: 100%;
-      height: 340px;
+      height: 300px;
+      touch-action: none;
     }
 
-    button {
-      width: 100%;
-      background: linear-gradient(45deg, var(--accent-color), #00b349);
-      border: none;
-      color: #000;
-      padding: 12px;
-      font-size: 16px;
+    .scoreboard {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 8px 15px;
+      margin-bottom: 10px;
+    }
+
+    .team-score {
+      font-size: 22px;
       font-weight: bold;
-      border-radius: 8px;
-      cursor: pointer;
+    }
+
+    .p1-color { color: var(--primary-color); }
+    .p2-color { color: var(--accent-color); }
+
+    .controls-panel {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       margin-top: 10px;
-      transition: 0.2s;
+      gap: 10px;
     }
 
-    button:hover { opacity: 0.9; transform: scale(1.01); }
-
-    .btn-secondary { background: #333; color: #fff; border: 1px solid var(--accent-color); }
-    .btn-danger { background: #ff4444; color: #fff; }
-
-    .status-box {
-      background: #111;
-      padding: 10px;
-      border-radius: 8px;
-      margin-bottom: 10px;
+    .dpad {
+      display: grid;
+      grid-template-columns: repeat(3, 42px);
+      grid-template-rows: repeat(3, 42px);
+      gap: 3px;
     }
 
-    .tank-bar-container {
-      width: 100%;
-      background: #333;
-      height: 12px;
+    .dpad button {
+      background: #21262d;
+      border: 1px solid #30363d;
+      color: white;
       border-radius: 6px;
-      overflow: hidden;
-      margin-bottom: 10px;
-      border: 1px solid #555;
+      font-size: 14px;
+      font-weight: bold;
+      padding: 0;
+      margin: 0;
     }
 
-    .tank-bar {
-      height: 100%;
-      width: 100%;
-      background: linear-gradient(90deg, #00ffcc, #00b349);
-      transition: width 0.1s;
+    .dpad button:active {
+      background: var(--primary-color);
+      color: black;
     }
 
-    #room-status { font-weight: bold; color: #ffcc00; margin-bottom: 8px; }
+    .action-btns {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex-grow: 1;
+    }
+
+    button.btn-action {
+      background: linear-gradient(45deg, var(--primary-color), #00a884);
+      color: #000;
+      border: none;
+      padding: 10px;
+      font-weight: bold;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    button.btn-action:active {
+      transform: scale(0.98);
+    }
+
+    button.btn-secondary {
+      background: #21262d;
+      color: #c9d1d9;
+      border: 1px solid #30363d;
+      padding: 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    button.btn-danger {
+      background: #da3633;
+      color: white;
+      border: none;
+      padding: 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+    }
 
     input[type="text"] {
       width: 100%;
-      padding: 10px;
-      margin-top: 8px;
+      padding: 8px;
+      margin: 5px 0;
       border-radius: 6px;
-      border: 1px solid var(--accent-color);
-      background: #111;
+      border: 1px solid #30363d;
+      background: #0d1117;
       color: white;
-      box-sizing: border-box;
       text-align: center;
     }
 
-    .friend-box {
-      background: #111;
+    .room-box {
+      background: #0d1117;
       padding: 10px;
       border-radius: 8px;
       margin-bottom: 10px;
-      border: 1px dashed var(--accent-color);
+      border: 1px solid var(--primary-color);
     }
 
-    .my-color-display {
-      display: inline-block;
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      vertical-align: middle;
-      margin-left: 5px;
+    ol {
+      padding-left: 20px;
+      text-align: left;
+      font-size: 13px;
     }
 
-    ol { padding-left: 20px; text-align: left; }
-    li { margin-bottom: 6px; color: #ddd; }
-    #loading { color: var(--accent-color); font-size: 16px; margin-bottom: 15px; }
+    li { margin-bottom: 4px; }
+
+    #status-msg {
+      font-size: 13px;
+      color: #ffcc00;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
   </style>
 </head>
 <body>
 
-  <h1>SPLAT: BATTLE ROYALE</h1>
-  <div class="subtitle">〜 全員参戦！乱闘ナワバリバトロワ 〜</div>
+  <h1>eFOOTBALL ONLINE 2P</h1>
+  <div class="subtitle">1vs1 リアルタイム通信対戦サッカー</div>
 
   <div id="loading">通信中...</div>
 
-  <!-- ログイン画面 -->
+  <!-- 1. ログイン画面 -->
   <div id="login-section" class="card" style="display: none;">
     <h2>Googleログイン</h2>
-    <p>バトロワに参加して全員でインクを塗り合おう！</p>
-    <button id="btn-login">Googleでログインしてプレイ</button>
+    <p style="font-size: 13px; color: #8b949e;">Googleアカウントでログインして友達と対戦を開始します。</p>
+    <button id="btn-login" class="btn-action">Googleでログイン</button>
   </div>
 
-  <!-- メインゲーム画面 -->
+  <!-- 2. メインゲーム画面 -->
   <div id="game-section" class="card" style="display: none;">
-    <div id="user-display"></div>
+    <div id="user-display" style="font-size: 13px; margin-bottom: 5px;"></div>
 
-    <!-- あい言葉入力 -->
-    <div class="friend-box">
-      <label for="room-id-input" style="font-size: 13px; color: #ffcc00;">👑 バトロワルームの「あい言葉」:</label>
-      <input type="text" id="room-id-input" placeholder="例: royale1" value="royale1">
-      <button id="btn-join">バトロワ参戦！</button>
+    <!-- あい言葉対戦部屋設定 -->
+    <div class="room-box">
+      <label for="room-id-input" style="font-size: 12px; color: var(--primary-color);">🔑 あい言葉（ルームID）で友達とマッチング:</label>
+      <input type="text" id="room-id-input" value="1234" placeholder="例: 1234">
+      <button id="btn-join" class="btn-action">対戦部屋に入り試合開始</button>
     </div>
 
-    <div id="room-status">「あい言葉」を入力してバトロワに参戦しよう！</div>
+    <div id="status-msg">あい言葉を入力して「対戦部屋に入る」を押してください</div>
 
-    <div class="status-box">
-      <div>あなたのインク色: <span id="my-color-indicator" class="my-color-display"></span></div>
-      <div>現在の塗りポイント: <span id="my-score-val" style="color:#00ffcc; font-weight:bold;">0 pt</span></div>
+    <!-- スコアボード -->
+    <div class="scoreboard">
+      <div>
+        <span id="p1-name" class="p1-color">P1 (HOME)</span>
+        <div id="p1-score" class="team-score p1-color">0</div>
+      </div>
+      <div style="font-size: 14px; color: #8b949e;">VS</div>
+      <div>
+        <span id="p2-name" class="p2-color">P2 (AWAY)</span>
+        <div id="p2-score" class="team-score p2-color">0</div>
+      </div>
     </div>
 
-    <div style="font-size: 12px; text-align: left; margin-bottom: 2px;">INK TANK</div>
-    <div class="tank-bar-container">
-      <div id="tank-bar" class="tank-bar"></div>
+    <!-- ピッチ（キャンバス） -->
+    <div class="pitch-container">
+      <canvas id="pitchCanvas" width="480" height="300"></canvas>
     </div>
 
-    <div class="canvas-container">
-      <canvas id="paintCanvas" width="500" height="340"></canvas>
+    <!-- コントローラー -->
+    <div class="controls-panel">
+      <div class="dpad">
+        <div></div><button id="btn-up">▲</button><div></div>
+        <button id="btn-left">◀</button><div></div><button id="btn-right">▶</button>
+        <div></div><button id="btn-down">▼</button><div></div>
+      </div>
+      <div class="action-btns">
+        <button id="btn-kick" class="btn-action" style="background: linear-gradient(45deg, #ff0055, #ff5500); color: white;">⚡ シュート / パス</button>
+        <button id="btn-reset-ball" class="btn-secondary">⚽ ボールを中央に戻す</button>
+      </div>
     </div>
 
-    <button id="btn-clear" class="btn-secondary">ステージ清掃（リセット）</button>
+    <!-- プロフィール設定（加点要素） -->
+    <div style="margin-top: 15px; border-top: 1px solid #30363d; padding-top: 10px;">
+      <label style="font-size: 12px;">プレイヤー名変更 (編集機能):</label>
+      <input type="text" id="player-name-input" placeholder="イナズマFC">
+      <button id="btn-update-name" class="btn-secondary" style="width: 100%; margin-top: 4px;">名前を更新</button>
+    </div>
 
-    <h3>📝 プレイヤー名設定（加点要素）</h3>
-    <input type="text" id="player-name-input" placeholder="イカのなまえ">
-    <button id="btn-update-name" class="btn-secondary">名前を変更する</button>
-
-    <br><br>
-    <button id="btn-reset" class="btn-danger">全データを初期化</button>
-    <button id="btn-logout" class="btn-secondary">ログアウト</button>
+    <div style="margin-top: 10px; display: flex; gap: 5px;">
+      <button id="btn-reset-data" class="btn-danger" style="flex: 1;">データ削除 (初期化)</button>
+      <button id="btn-logout" class="btn-secondary" style="flex: 1;">ログアウト</button>
+    </div>
   </div>
 
-  <!-- ランキング画面 -->
+  <!-- 3. オンラインランキング（加点要素） -->
   <div id="ranking-section" class="card" style="display: none;">
-    <h3>🏆 バトロワ累積塗りランキング</h3>
+    <h3 style="font-size: 14px; margin: 0 0 8px 0; color: var(--primary-color);">🏆 オンライン通算勝利ランキング</h3>
     <ol id="ranking-list"></ol>
   </div>
 
-  <!-- Firebase SDK -->
+  <!-- Firebase SDK (v10.8.0) -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { 
@@ -229,7 +299,7 @@
       query, 
       orderBy, 
       limit,
-      onSnapshot
+      onSnapshot 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -247,45 +317,35 @@
     const provider = new GoogleAuthProvider();
 
     let currentUser = null;
-    let playerData = { name: "", totalScore: 0 };
+    let playerData = { name: "イナズマFC", wins: 0 };
 
-    // バトロワカラーリスト
-    const BATTLE_COLORS = [
-      "#00ffcc", "#ff007f", "#ffcc00", "#9900ff", 
-      "#ff6600", "#0099ff", "#76ff03", "#f44336"
-    ];
-    let myColor = BATTLE_COLORS[Math.floor(Math.random() * BATTLE_COLORS.length)];
-
+    let myRole = null; // "p1" or "p2"
     let currentRoomId = null;
     let roomUnsubscribe = null;
-    let isDrawing = false;
-    let myScore = 0;
 
-    let inkAmount = 100;
-    const tankBar = document.getElementById("tank-bar");
-
-    // インク自動回復
-    setInterval(() => {
-      if (inkAmount < 100) {
-        inkAmount = Math.min(100, inkAmount + 6);
-        tankBar.style.width = `${inkAmount}%`;
-      }
-    }, 200);
+    const gameState = {
+      p1: { x: 80, y: 150 },
+      p2: { x: 400, y: 150 },
+      ball: { x: 240, y: 150 },
+      score1: 0,
+      score2: 0
+    };
 
     const loadingEl = document.getElementById("loading");
     const loginSection = document.getElementById("login-section");
     const gameSection = document.getElementById("game-section");
     const rankingSection = document.getElementById("ranking-section");
     const userDisplay = document.getElementById("user-display");
-    const roomStatus = document.getElementById("room-status");
-    const myScoreVal = document.getElementById("my-score-val");
-    const myColorIndicator = document.getElementById("my-color-indicator");
-    const btnJoin = document.getElementById("btn-join");
+    const statusMsg = document.getElementById("status-msg");
+    const p1NameEl = document.getElementById("p1-name");
+    const p2NameEl = document.getElementById("p2-name");
+    const p1ScoreEl = document.getElementById("p1-score");
+    const p2ScoreEl = document.getElementById("p2-score");
     const roomIdInput = document.getElementById("room-id-input");
     const nameInput = document.getElementById("player-name-input");
     const rankingList = document.getElementById("ranking-list");
 
-    const canvas = document.getElementById("paintCanvas");
+    const canvas = document.getElementById("pitchCanvas");
     const ctx = canvas.getContext("2d");
 
     getRedirectResult(auth).catch(err => console.error(err));
@@ -302,7 +362,7 @@
 
         await loadPlayerData(user.uid, user.displayName);
         await loadRanking();
-        resetCanvas();
+        drawPitch();
       } else {
         currentUser = null;
         loginSection.style.display = "block";
@@ -319,11 +379,12 @@
         if (docSnap.exists()) {
           playerData = docSnap.data();
         } else {
-          playerData = { name: defaultName || "イカ戦士", totalScore: 0 };
+          playerData = { name: defaultName || "イナズマFC", wins: 0 };
           await setDoc(docRef, playerData);
         }
-        updateUI();
-      } catch (e) { console.error(e); }
+        userDisplay.innerHTML = `ログイン中: <strong>${playerData.name}</strong> (通算 ${playerData.wins || 0} 勝)`;
+        nameInput.value = playerData.name;
+      } catch (e) { console.error("データ読み込みエラー:", e); }
     }
 
     async function savePlayerData() {
@@ -331,37 +392,235 @@
       try {
         const docRef = doc(db, "users", currentUser.uid);
         await setDoc(docRef, playerData);
+        userDisplay.innerHTML = `ログイン中: <strong>${playerData.name}</strong> (通算 ${playerData.wins || 0} 勝)`;
         await loadRanking();
-      } catch (e) { console.error(e); }
+      } catch (e) { console.error("データ保存エラー:", e); }
     }
 
-    function updateUI() {
-      userDisplay.innerHTML = `<p>プレイヤー: <strong>${playerData.name}</strong></p>`;
-      myColorIndicator.style.backgroundColor = myColor;
-      nameInput.value = playerData.name;
-    }
-
-    function resetCanvas() {
-      ctx.fillStyle = "#222222";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      myScore = 0;
-      myScoreVal.textContent = "0 pt";
-    }
-
-    // バトロワルーム参戦
-    btnJoin.addEventListener("click", () => {
+    document.getElementById("btn-join").addEventListener("click", async () => {
       const roomId = roomIdInput.value.trim();
-      if (!roomId) {
-        alert("あい言葉を入力してください！");
-        return;
-      }
+      if (!roomId) return alert("あい言葉を入力してください！");
 
       currentRoomId = roomId;
-      resetCanvas();
-      roomStatus.textContent = `🔥 バトロワルーム [${roomId}] にリアルタイム接続中！`;
+      statusMsg.textContent = `部屋 [${roomId}] に接続中...`;
 
-      // 自分のインク色をランダム決定
-      myColor = BATTLE_COLORS[Math.floor(Math.random() * BATTLE_COLORS.length)];
-      myColorIndicator.style.backgroundColor = myColor;
+      const roomRef = doc(db, "rooms", `efootball_${roomId}`);
+      const roomSnap = await getDoc(roomRef);
 
-      const roomRef = doc(
+      if (!roomSnap.exists() || !roomSnap.data().p1) {
+        myRole = "p1";
+        await setDoc(roomRef, {
+          p1: playerData.name,
+          p2: null,
+          p1Pos: { x: 80, y: 150 },
+          p2Pos: { x: 400, y: 150 },
+          ball: { x: 240, y: 150 },
+          s1: 0, s2: 0
+        });
+        statusMsg.textContent = `部屋 [${roomId}] (P1: HOME) で待機中... 友達(P2)の参加を待っています`;
+      } else if (!roomSnap.data().p2 && roomSnap.data().p1 !== playerData.name) {
+        myRole = "p2";
+        await setDoc(roomRef, { p2: playerData.name }, { merge: true });
+        statusMsg.textContent = `部屋 [${roomId}] (P2: AWAY) で参加！ キックオフ！`;
+      } else {
+        myRole = "p1";
+        await setDoc(roomRef, {
+          p1: playerData.name,
+          p2: null,
+          p1Pos: { x: 80, y: 150 },
+          p2Pos: { x: 400, y: 150 },
+          ball: { x: 240, y: 150 },
+          s1: 0, s2: 0
+        });
+        statusMsg.textContent = `部屋 [${roomId}] を初期化しました。対戦相手を待ちます`;
+      }
+
+      listenRoom(roomRef);
+    });
+
+    function listenRoom(roomRef) {
+      if (roomUnsubscribe) roomUnsubscribe();
+
+      roomUnsubscribe = onSnapshot(roomRef, (snapshot) => {
+        const data = snapshot.data();
+        if (!data) return;
+
+        if (data.p1) p1NameEl.textContent = `P1: ${data.p1}`;
+        if (data.p2) p2NameEl.textContent = `P2: ${data.p2}`;
+
+        if (data.p1 && data.p2) {
+          statusMsg.textContent = `⚽ 試合中！ [${data.p1}] vs [${data.p2}]`;
+        }
+
+        if (data.p1Pos) gameState.p1 = data.p1Pos;
+        if (data.p2Pos) gameState.p2 = data.p2Pos;
+        if (data.ball) gameState.ball = data.ball;
+
+        if (data.s1 !== undefined) {
+          gameState.score1 = data.s1;
+          p1ScoreEl.textContent = data.s1;
+        }
+        if (data.s2 !== undefined) {
+          gameState.score2 = data.s2;
+          p2ScoreEl.textContent = data.s2;
+        }
+
+        drawPitch();
+      });
+    }
+
+    async function movePlayer(dx, dy) {
+      if (!myRole || !currentRoomId) return;
+
+      const myPos = (myRole === "p1") ? gameState.p1 : gameState.p2;
+      myPos.x = Math.max(15, Math.min(canvas.width - 15, myPos.x + dx));
+      myPos.y = Math.max(15, Math.min(canvas.height - 15, myPos.y + dy));
+
+      const roomRef = doc(db, "rooms", `efootball_${currentRoomId}`);
+      const key = (myRole === "p1") ? "p1Pos" : "p2Pos";
+
+      await setDoc(roomRef, { [key]: myPos }, { merge: true });
+    }
+
+    async function kickBall() {
+      if (!myRole || !currentRoomId) return;
+
+      const myPos = (myRole === "p1") ? gameState.p1 : gameState.p2;
+      const dist = Math.hypot(gameState.ball.x - myPos.x, gameState.ball.y - myPos.y);
+
+      if (dist < 35) {
+        const dir = (myRole === "p1") ? 1 : -1;
+        gameState.ball.x += dir * 40;
+        gameState.ball.y += (Math.random() - 0.5) * 20;
+
+        if (gameState.ball.x > canvas.width - 20 && gameState.ball.y > 100 && gameState.ball.y < 200) {
+          gameState.score1 += 1;
+          gameState.ball = { x: 240, y: 150 };
+          if (myRole === "p1") {
+            playerData.wins = (playerData.wins || 0) + 1;
+            await savePlayerData();
+          }
+        } else if (gameState.ball.x < 20 && gameState.ball.y > 100 && gameState.ball.y < 200) {
+          gameState.score2 += 1;
+          gameState.ball = { x: 240, y: 150 };
+          if (myRole === "p2") {
+            playerData.wins = (playerData.wins || 0) + 1;
+            await savePlayerData();
+          }
+        }
+
+        gameState.ball.x = Math.max(20, Math.min(canvas.width - 20, gameState.ball.x));
+        gameState.ball.y = Math.max(20, Math.min(canvas.height - 20, gameState.ball.y));
+
+        const roomRef = doc(db, "rooms", `efootball_${currentRoomId}`);
+        await setDoc(roomRef, {
+          ball: gameState.ball,
+          s1: gameState.score1,
+          s2: gameState.score2
+        }, { merge: true });
+      }
+    }
+
+    function drawPitch() {
+      ctx.fillStyle = "#1b4d2e";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.6)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(canvas.width / 2, 0);
+      ctx.lineTo(canvas.width / 2, canvas.height);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(canvas.width / 2, canvas.height / 2, 40, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.strokeRect(0, 90, 40, 120);
+      ctx.strokeRect(canvas.width - 40, 90, 40, 120);
+
+      // P1
+      ctx.fillStyle = "#00ffcc";
+      ctx.beginPath();
+      ctx.arc(gameState.p1.x, gameState.p1.y, 14, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#000";
+      ctx.font = "bold 10px sans-serif";
+      ctx.fillText("P1", gameState.p1.x - 6, gameState.p1.y + 4);
+
+      // P2
+      ctx.fillStyle = "#ff0055";
+      ctx.beginPath();
+      ctx.arc(gameState.p2.x, gameState.p2.y, 14, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#fff";
+      ctx.fillText("P2", gameState.p2.x - 6, gameState.p2.y + 4);
+
+      // Ball
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.arc(gameState.ball.x, gameState.ball.y, 8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#000";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+
+    window.addEventListener("keydown", (e) => {
+      const step = 12;
+      if (e.key === "ArrowUp" || e.key === "w") movePlayer(0, -step);
+      if (e.key === "ArrowDown" || e.key === "s") movePlayer(0, step);
+      if (e.key === "ArrowLeft" || e.key === "a") movePlayer(-step, 0);
+      if (e.key === "ArrowRight" || e.key === "d") movePlayer(step, 0);
+      if (e.key === " ") kickBall();
+    });
+
+    document.getElementById("btn-up").addEventListener("click", () => movePlayer(0, -15));
+    document.getElementById("btn-down").addEventListener("click", () => movePlayer(0, 15));
+    document.getElementById("btn-left").addEventListener("click", () => movePlayer(-15, 0));
+    document.getElementById("btn-right").addEventListener("click", () => movePlayer(15, 0));
+    document.getElementById("btn-kick").addEventListener("click", kickBall);
+
+    document.getElementById("btn-reset-ball").addEventListener("click", async () => {
+      if (!currentRoomId) return;
+      gameState.ball = { x: 240, y: 150 };
+      const roomRef = doc(db, "rooms", `efootball_${currentRoomId}`);
+      await setDoc(roomRef, { ball: gameState.ball }, { merge: true });
+    });
+
+    document.getElementById("btn-update-name").addEventListener("click", async () => {
+      const newName = nameInput.value.trim();
+      if (newName) {
+        playerData.name = newName;
+        await savePlayerData();
+        alert("名前を更新しました！");
+      }
+    });
+
+    document.getElementById("btn-reset-data").addEventListener("click", async () => {
+      if (confirm("本当にデータを初期化しますか？")) {
+        const docRef = doc(db, "users", currentUser.uid);
+        await deleteDoc(docRef);
+        playerData = { name: currentUser.displayName || "イナズマ選手", wins: 0 };
+        await savePlayerData();
+        alert("データを初期化しました。");
+      }
+    });
+
+    async function loadRanking() {
+      rankingList.innerHTML = "";
+      try {
+        const q = query(collection(db, "users"), orderBy("wins", "desc"), limit(5));
+        const querySnapshot = await getDocs(q);
+
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          const li = document.createElement("li");
+          li.textContent = `${data.name || "名無しの選手"}: ${data.wins || 0} 勝`;
+          rankingList.appendChild(li);
+        });
+      } catch (e) { console.error("ランキング取得エラー:", e); }
+    }
+  </script>
+</body>
+</html>
