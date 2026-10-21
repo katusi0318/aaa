@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Splatoon: Friend Online Battle</title>
+  <title>Splatoon: Battle Royale</title>
   <style>
     :root {
-      --bg-color: #121212;
-      --card-bg: #1e1e1e;
-      --p1-color: #00ff66;
-      --p2-color: #ff0055;
+      --bg-color: #0d0d11;
+      --card-bg: #1a1a24;
+      --accent-color: #00ffcc;
+      --neon-pink: #ff007f;
       --text-color: #ffffff;
     }
 
@@ -26,16 +26,16 @@
     }
 
     h1 {
-      color: var(--p1-color);
+      color: var(--accent-color);
       text-transform: uppercase;
       letter-spacing: 2px;
-      text-shadow: 0 0 10px var(--p1-color);
+      text-shadow: 0 0 12px var(--accent-color);
       margin: 5px 0;
       font-size: 24px;
     }
 
     .subtitle {
-      color: var(--p2-color);
+      color: var(--neon-pink);
       font-size: 13px;
       margin-bottom: 10px;
       font-weight: bold;
@@ -43,12 +43,12 @@
 
     .card {
       background-color: var(--card-bg);
-      border: 2px solid var(--p1-color);
+      border: 2px solid var(--accent-color);
       border-radius: 12px;
       padding: 12px;
       width: 100%;
       max-width: 600px;
-      box-shadow: 0 0 15px rgba(0, 255, 102, 0.2);
+      box-shadow: 0 0 15px rgba(0, 255, 204, 0.2);
       margin-bottom: 15px;
       box-sizing: border-box;
       text-align: center;
@@ -67,12 +67,12 @@
       touch-action: none;
       display: block;
       width: 100%;
-      height: 320px;
+      height: 340px;
     }
 
     button {
       width: 100%;
-      background: linear-gradient(45deg, var(--p1-color), #00b349);
+      background: linear-gradient(45deg, var(--accent-color), #00b349);
       border: none;
       color: #000;
       padding: 12px;
@@ -85,24 +85,16 @@
     }
 
     button:hover { opacity: 0.9; transform: scale(1.01); }
-    button:disabled { background: #555; color: #888; cursor: not-allowed; transform: none; }
 
-    .btn-secondary { background: #333; color: #fff; border: 1px solid var(--p1-color); }
+    .btn-secondary { background: #333; color: #fff; border: 1px solid var(--accent-color); }
     .btn-danger { background: #ff4444; color: #fff; }
 
     .status-box {
-      display: flex;
-      justify-content: space-around;
       background: #111;
       padding: 10px;
       border-radius: 8px;
       margin-bottom: 10px;
     }
-
-    .status-item { text-align: center; }
-    .status-value { font-size: 18px; font-weight: bold; }
-    .p1-text { color: var(--p1-color); }
-    .p2-text { color: var(--p2-color); }
 
     .tank-bar-container {
       width: 100%;
@@ -117,7 +109,7 @@
     .tank-bar {
       height: 100%;
       width: 100%;
-      background: linear-gradient(90deg, #00ff66, #00b349);
+      background: linear-gradient(90deg, #00ffcc, #00b349);
       transition: width 0.1s;
     }
 
@@ -128,7 +120,7 @@
       padding: 10px;
       margin-top: 8px;
       border-radius: 6px;
-      border: 1px solid var(--p1-color);
+      border: 1px solid var(--accent-color);
       background: #111;
       color: white;
       box-sizing: border-box;
@@ -140,25 +132,34 @@
       padding: 10px;
       border-radius: 8px;
       margin-bottom: 10px;
-      border: 1px dashed var(--p1-color);
+      border: 1px dashed var(--accent-color);
+    }
+
+    .my-color-display {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      vertical-align: middle;
+      margin-left: 5px;
     }
 
     ol { padding-left: 20px; text-align: left; }
     li { margin-bottom: 6px; color: #ddd; }
-    #loading { color: var(--p1-color); font-size: 16px; margin-bottom: 15px; }
+    #loading { color: var(--accent-color); font-size: 16px; margin-bottom: 15px; }
   </style>
 </head>
 <body>
 
-  <h1>SPLAT-TURF: FRIEND MATCH</h1>
-  <div class="subtitle">〜 友達と合言葉でリアルタイム対戦 〜</div>
+  <h1>SPLAT: BATTLE ROYALE</h1>
+  <div class="subtitle">〜 全員参戦！乱闘ナワバリバトロワ 〜</div>
 
   <div id="loading">通信中...</div>
 
   <!-- ログイン画面 -->
   <div id="login-section" class="card" style="display: none;">
     <h2>Googleログイン</h2>
-    <p>Googleアカウントでログインして友達と対戦しよう！</p>
+    <p>バトロワに参加して全員でインクを塗り合おう！</p>
     <button id="btn-login">Googleでログインしてプレイ</button>
   </div>
 
@@ -166,28 +167,18 @@
   <div id="game-section" class="card" style="display: none;">
     <div id="user-display"></div>
 
-    <!-- 友達対戦用 あい言葉入力 -->
+    <!-- あい言葉入力 -->
     <div class="friend-box">
-      <label for="room-id-input" style="font-size: 13px; color: #ffcc00;">🔑 友達と同じ「あい言葉」を入力:</label>
-      <input type="text" id="room-id-input" placeholder="例: 1234" value="1234">
-      <button id="btn-join">この「あい言葉」で部屋に入る</button>
+      <label for="room-id-input" style="font-size: 13px; color: #ffcc00;">👑 バトロワルームの「あい言葉」:</label>
+      <input type="text" id="room-id-input" placeholder="例: royale1" value="royale1">
+      <button id="btn-join">バトロワ参戦！</button>
     </div>
 
-    <div id="room-status">「あい言葉」を入力して部屋に入ってください</div>
+    <div id="room-status">「あい言葉」を入力してバトロワに参戦しよう！</div>
 
     <div class="status-box">
-      <div class="status-item">
-        <div id="p1-label" class="p1-text">P1 (緑)</div>
-        <div id="p1-score" class="status-value p1-text">0 pt</div>
-      </div>
-      <div class="status-item">
-        <div id="p2-label" class="p2-text">P2 (赤)</div>
-        <div id="p2-score" class="status-value p2-text">0 pt</div>
-      </div>
-      <div class="status-item">
-        <div>勝利数</div>
-        <div id="wins-val" class="status-value" style="color: #00ffcc;">0 勝利</div>
-      </div>
+      <div>あなたのインク色: <span id="my-color-indicator" class="my-color-display"></span></div>
+      <div>現在の塗りポイント: <span id="my-score-val" style="color:#00ffcc; font-weight:bold;">0 pt</span></div>
     </div>
 
     <div style="font-size: 12px; text-align: left; margin-bottom: 2px;">INK TANK</div>
@@ -196,8 +187,10 @@
     </div>
 
     <div class="canvas-container">
-      <canvas id="paintCanvas" width="500" height="320"></canvas>
+      <canvas id="paintCanvas" width="500" height="340"></canvas>
     </div>
+
+    <button id="btn-clear" class="btn-secondary">ステージ清掃（リセット）</button>
 
     <h3>📝 プレイヤー名設定（加点要素）</h3>
     <input type="text" id="player-name-input" placeholder="イカのなまえ">
@@ -210,7 +203,7 @@
 
   <!-- ランキング画面 -->
   <div id="ranking-section" class="card" style="display: none;">
-    <h3>🏆 オンライン対戦 勝利数ランキング</h3>
+    <h3>🏆 バトロワ累積塗りランキング</h3>
     <ol id="ranking-list"></ol>
   </div>
 
@@ -254,14 +247,19 @@
     const provider = new GoogleAuthProvider();
 
     let currentUser = null;
-    let playerData = { name: "", wins: 0 };
+    let playerData = { name: "", totalScore: 0 };
 
-    let myRole = null; 
+    // バトロワカラーリスト
+    const BATTLE_COLORS = [
+      "#00ffcc", "#ff007f", "#ffcc00", "#9900ff", 
+      "#ff6600", "#0099ff", "#76ff03", "#f44336"
+    ];
+    let myColor = BATTLE_COLORS[Math.floor(Math.random() * BATTLE_COLORS.length)];
+
     let currentRoomId = null;
     let roomUnsubscribe = null;
     let isDrawing = false;
-    let p1Score = 0;
-    let p2Score = 0;
+    let myScore = 0;
 
     let inkAmount = 100;
     const tankBar = document.getElementById("tank-bar");
@@ -269,7 +267,7 @@
     // インク自動回復
     setInterval(() => {
       if (inkAmount < 100) {
-        inkAmount = Math.min(100, inkAmount + 5);
+        inkAmount = Math.min(100, inkAmount + 6);
         tankBar.style.width = `${inkAmount}%`;
       }
     }, 200);
@@ -280,9 +278,8 @@
     const rankingSection = document.getElementById("ranking-section");
     const userDisplay = document.getElementById("user-display");
     const roomStatus = document.getElementById("room-status");
-    const p1ScoreEl = document.getElementById("p1-score");
-    const p2ScoreEl = document.getElementById("p2-score");
-    const winsValEl = document.getElementById("wins-val");
+    const myScoreVal = document.getElementById("my-score-val");
+    const myColorIndicator = document.getElementById("my-color-indicator");
     const btnJoin = document.getElementById("btn-join");
     const roomIdInput = document.getElementById("room-id-input");
     const nameInput = document.getElementById("player-name-input");
@@ -308,4 +305,63 @@
         resetCanvas();
       } else {
         currentUser = null;
-        login
+        loginSection.style.display = "block";
+        gameSection.style.display = "none";
+        rankingSection.style.display = "none";
+      }
+    });
+
+    async function loadPlayerData(uid, defaultName) {
+      try {
+        const docRef = doc(db, "users", uid);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+          playerData = docSnap.data();
+        } else {
+          playerData = { name: defaultName || "イカ戦士", totalScore: 0 };
+          await setDoc(docRef, playerData);
+        }
+        updateUI();
+      } catch (e) { console.error(e); }
+    }
+
+    async function savePlayerData() {
+      if (!currentUser) return;
+      try {
+        const docRef = doc(db, "users", currentUser.uid);
+        await setDoc(docRef, playerData);
+        await loadRanking();
+      } catch (e) { console.error(e); }
+    }
+
+    function updateUI() {
+      userDisplay.innerHTML = `<p>プレイヤー: <strong>${playerData.name}</strong></p>`;
+      myColorIndicator.style.backgroundColor = myColor;
+      nameInput.value = playerData.name;
+    }
+
+    function resetCanvas() {
+      ctx.fillStyle = "#222222";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      myScore = 0;
+      myScoreVal.textContent = "0 pt";
+    }
+
+    // バトロワルーム参戦
+    btnJoin.addEventListener("click", () => {
+      const roomId = roomIdInput.value.trim();
+      if (!roomId) {
+        alert("あい言葉を入力してください！");
+        return;
+      }
+
+      currentRoomId = roomId;
+      resetCanvas();
+      roomStatus.textContent = `🔥 バトロワルーム [${roomId}] にリアルタイム接続中！`;
+
+      // 自分のインク色をランダム決定
+      myColor = BATTLE_COLORS[Math.floor(Math.random() * BATTLE_COLORS.length)];
+      myColorIndicator.style.backgroundColor = myColor;
+
+      const roomRef = doc(
