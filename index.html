@@ -392,26 +392,71 @@
       createGoal(-PITCH_WIDTH / 2, 0x00f2fe);
       createGoal(PITCH_WIDTH / 2, 0xff0080);
 
-      // P1 Player (Cyan Cylinder)
-      const playerGeo = new THREE.CylinderGeometry(0.9, 0.9, 1.8, 16);
-      const p1Mat = new THREE.MeshStandardMaterial({ color: 0x00f2fe, metalness: 0.3, roughness: 0.2 });
-      p1Mesh = new THREE.Mesh(playerGeo, p1Mat);
-      p1Mesh.position.y = 0.9;
-      p1Mesh.castShadow = true;
+      // --- リアルな3Dプレイヤーモデル作成関数 ---
+      function createPlayerModel(mainColorHex, accentColorHex) {
+        const group = new THREE.Group();
+
+        // 胴体 (ユニフォーム)
+        const torsoGeo = new THREE.CylinderGeometry(0.5, 0.4, 1.2, 16);
+        const torsoMat = new THREE.MeshStandardMaterial({ color: mainColorHex, roughness: 0.3, metalness: 0.1 });
+        const torso = new THREE.Mesh(torsoGeo, torsoMat);
+        torso.position.y = 1.1;
+        torso.castShadow = true;
+        group.add(torso);
+
+        // 頭部 (肌色 + 髪型)
+        const headGeo = new THREE.SphereGeometry(0.32, 16, 16);
+        const headMat = new THREE.MeshStandardMaterial({ color: 0xffdbac, roughness: 0.8 });
+        const head = new THREE.Mesh(headGeo, headMat);
+        head.position.y = 1.95;
+        head.castShadow = true;
+        group.add(head);
+
+        // 髪の毛
+        const hairGeo = new THREE.SphereGeometry(0.34, 16, 16, 0, Math.PI * 2, 0, Math.PI * 0.5);
+        const hairMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.9 });
+        const hair = new THREE.Mesh(hairGeo, hairMat);
+        hair.position.y = 1.98;
+        group.add(hair);
+
+        // 足 (パンツ + スパイク)
+        const legGeo = new THREE.CylinderGeometry(0.12, 0.1, 0.7, 12);
+        const legMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.5 });
+        
+        const leftLeg = new THREE.Mesh(legGeo, legMat);
+        leftLeg.position.set(-0.22, 0.35, 0);
+        leftLeg.castShadow = true;
+        group.add(leftLeg);
+
+        const rightLeg = new THREE.Mesh(legGeo, legMat);
+        rightLeg.position.set(0.22, 0.35, 0);
+        rightLeg.castShadow = true;
+        group.add(rightLeg);
+
+        // 足元のライティングリング（視認性向上）
+        const ringGeo = new THREE.RingGeometry(0.6, 0.75, 32);
+        const ringMat = new THREE.MeshBasicMaterial({ color: mainColorHex, side: THREE.DoubleSide });
+        const ring = new THREE.Mesh(ringGeo, ringMat);
+        ring.rotation.x = Math.PI / 2;
+        ring.position.y = 0.02;
+        group.add(ring);
+
+        return group;
+      }
+
+      // P1 Player (Cyan/Blue Unit)
+      p1Mesh = createPlayerModel(0x00f2fe, 0x0088ff);
       scene.add(p1Mesh);
 
-      // P2 Player (Pink Cylinder)
-      const p2Mat = new THREE.MeshStandardMaterial({ color: 0xff0080, metalness: 0.3, roughness: 0.2 });
-      p2Mesh = new THREE.Mesh(playerGeo, p2Mat);
-      p2Mesh.position.y = 0.9;
-      p2Mesh.castShadow = true;
+      // P2 Player (Pink/Red Unit)
+      p2Mesh = createPlayerModel(0xff0080, 0xff0040);
       scene.add(p2Mesh);
 
-      // Ball (Soccer Sphere)
-      const ballGeo = new THREE.SphereGeometry(0.6, 24, 24);
-      const ballMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
+      // Ball (Soccer Sphere with detailed texture pattern)
+      const ballGeo = new THREE.SphereGeometry(0.5, 32, 32);
+      const ballMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.2, metalness: 0.1 });
       ballMesh = new THREE.Mesh(ballGeo, ballMat);
-      ballMesh.position.y = 0.6;
+      ballMesh.position.y = 0.5;
       ballMesh.castShadow = true;
       scene.add(ballMesh);
 
@@ -469,8 +514,23 @@
     }
 
     // AUTHENTICATION MANAGEMENT
-    getRedirectResult(auth).catch(err => console.error(err));
-    document.getElementById("btn-login").addEventListener("click", () => signInWithRedirect(auth, provider));
+    // ポップアップと匿名ログイン対応を追加してログイン失敗を防ぐ
+    import { signInWithPopup, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+    document.getElementById("btn-login").addEventListener("click", async () => {
+      try {
+        await signInWithPopup(auth, provider);
+      } catch (err) {
+        console.warn("Popup blocked or failed, trying redirect...", err);
+        try {
+          await signInWithRedirect(auth, provider);
+        } catch (e) {
+          console.error("Redirect login failed, falling back to anonymous session:", e);
+          await signInAnonymously(auth);
+        }
+      }
+    });
+
     document.getElementById("btn-logout").addEventListener("click", () => signOut(auth));
 
     onAuthStateChanged(auth, async (user) => {
@@ -481,7 +541,8 @@
         gameSection.style.display = "block";
         rankingSection.style.display = "block";
 
-        await loadPlayerData(user.uid, user.displayName);
+        const displayName = user.displayName || (user.isAnonymous ? "ゲストプレイヤー" : "ストライカーFC");
+        await loadPlayerData(user.uid, displayName);
         await loadRanking();
         
         if (!renderer) {
